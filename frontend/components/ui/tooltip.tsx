@@ -25,7 +25,7 @@ function TooltipTrigger({ render, children, ...props }: TooltipPrimitive.Trigger
   return (
     <TooltipPrimitive.Trigger
       data-slot="tooltip-trigger"
-      render={render || (children ? <span className="inline-flex" /> : undefined)}
+      render={render}
       {...props}
     >
       {children}

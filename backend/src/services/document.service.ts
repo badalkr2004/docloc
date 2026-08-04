@@ -67,7 +67,9 @@ export const documentService = {
       conditions.push(lt(documents.expiryDate, new Date(filters.expiryBefore)));
     }
     if (filters.folderId !== 'all') {
-      if (!filters.folderId || filters.folderId === 'root' || filters.folderId === 'null') {
+      if (filters.query && !filters.folderId) {
+        // When searching with query and no explicit folder scope, search across all folders
+      } else if (!filters.folderId || filters.folderId === 'root' || filters.folderId === 'null') {
         conditions.push(isNull(documents.folderId));
       } else {
         conditions.push(eq(documents.folderId, filters.folderId));

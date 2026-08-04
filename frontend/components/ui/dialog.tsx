@@ -15,7 +15,7 @@ function DialogTrigger({ render, children, ...props }: DialogPrimitive.Trigger.P
   return (
     <DialogPrimitive.Trigger
       data-slot="dialog-trigger"
-      render={render || (children ? <span className="inline-flex" /> : undefined)}
+      render={render}
       {...props}
     >
       {children}

@@ -81,11 +81,11 @@ export function BucketCard({ bucket, onDelete, isDeleting }: BucketCardProps) {
 
           <AlertDialog>
             <DropdownMenu>
-              <DropdownMenuTrigger>
+              <DropdownMenuTrigger render={
                 <Button variant="ghost" size="icon" className="h-8 w-8 -mr-2 text-muted-foreground hover:text-foreground">
                   <RiMore2Fill className="h-4 w-4" />
                 </Button>
-              </DropdownMenuTrigger>
+              } />
               <DropdownMenuContent align="end">
                 <DropdownMenuItem>
                   <Link href={`/buckets/${bucket.id}`} className="cursor-pointer flex items-center">

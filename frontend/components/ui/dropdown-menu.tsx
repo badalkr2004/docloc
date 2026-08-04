@@ -18,7 +18,7 @@ function DropdownMenuTrigger({ render, children, ...props }: MenuPrimitive.Trigg
   return (
     <MenuPrimitive.Trigger
       data-slot="dropdown-menu-trigger"
-      render={render || (children ? <span className="inline-flex" /> : undefined)}
+      render={render}
       {...props}
     >
       {children}

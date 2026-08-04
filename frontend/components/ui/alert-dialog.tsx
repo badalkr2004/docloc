@@ -14,7 +14,7 @@ function AlertDialogTrigger({ render, children, ...props }: AlertDialogPrimitive
   return (
     <AlertDialogPrimitive.Trigger
       data-slot="alert-dialog-trigger"
-      render={render || (children ? <span className="inline-flex" /> : undefined)}
+      render={render}
       {...props}
     >
       {children}

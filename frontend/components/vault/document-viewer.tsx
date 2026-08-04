@@ -73,6 +73,11 @@ export function DocumentViewer({ document, documents, isOpen, onClose, onNavigat
   const panOffset = useRef({ x: 0, y: 0 });
   const contentRef = useRef<HTMLDivElement>(null);
 
+  // Derived properties
+  const isImage = document?.mimeType?.startsWith('image/') || false;
+  const isPdf = document?.mimeType === 'application/pdf';
+  const fileExtension = document?.mimeType?.split('/')[1]?.toUpperCase() || 'FILE';
+
   // Current document index for navigation
   const currentIndex = document ? documents.findIndex(d => d.id === document.id) : -1;
   const hasPrev = currentIndex > 0;
@@ -212,7 +217,7 @@ export function DocumentViewer({ document, documents, isOpen, onClose, onNavigat
     e.preventDefault();
     const delta = e.deltaY > 0 ? -0.15 : 0.15;
     setZoom(z => Math.min(Math.max(z + delta, 0.25), 5));
-  }, []);
+  }, [isImage]);
 
   const handleDownload = () => {
     if (blobUrl && document) {
@@ -224,10 +229,6 @@ export function DocumentViewer({ document, documents, isOpen, onClose, onNavigat
   };
 
   if (!document) return null;
-
-  const isImage = document.mimeType.startsWith('image/');
-  const isPdf = document.mimeType === 'application/pdf';
-  const fileExtension = document.mimeType.split('/')[1]?.toUpperCase() || 'FILE';
 
   return (
     <AnimatePresence>

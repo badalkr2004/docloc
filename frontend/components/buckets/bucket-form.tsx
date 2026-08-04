@@ -137,15 +137,15 @@ export function BucketForm({ open, onOpenChange }: BucketFormProps) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[600px] max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
-        <DialogHeader className="p-6 pb-4 border-b">
+      <DialogContent className="sm:max-w-[600px] max-h-[85vh] flex flex-col p-0 gap-0 overflow-hidden">
+        <DialogHeader className="p-6 pb-4 border-b shrink-0">
           <DialogTitle>Create New Bucket</DialogTitle>
           <DialogDescription>
             Create a bucket to organize documents for a specific purpose.
           </DialogDescription>
         </DialogHeader>
 
-        <ScrollArea className="flex-1 p-6">
+        <div className="flex-1 overflow-y-auto p-6">
           <form id="bucket-form" onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
             {/* Name */}
             <div className="space-y-2">
@@ -285,9 +285,9 @@ export function BucketForm({ open, onOpenChange }: BucketFormProps) {
               )}
             </div>
           </form>
-        </ScrollArea>
+        </div>
 
-        <DialogFooter className="p-6 pt-4 border-t gap-2 sm:gap-0">
+        <DialogFooter className="p-6 pt-4 border-t gap-2 sm:gap-0 shrink-0 bg-background">
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>

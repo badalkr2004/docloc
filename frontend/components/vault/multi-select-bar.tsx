@@ -83,12 +83,12 @@ export function MultiSelectBar() {
 
           <div className="flex items-center gap-1">
             <DropdownMenu>
-              <DropdownMenuTrigger>
+              <DropdownMenuTrigger render={
                 <Button variant="ghost" size="sm" className="h-8 gap-2" disabled={count === 0}>
                   <RiFolderAddLine className="w-4 h-4" />
                   <span className="hidden sm:inline">Add to Bucket</span>
                 </Button>
-              </DropdownMenuTrigger>
+              } />
               <DropdownMenuContent align="center">
                 {buckets?.length ? (
                   buckets.map(bucket => (
