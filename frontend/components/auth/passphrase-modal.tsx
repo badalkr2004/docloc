@@ -46,9 +46,14 @@ export function PassphraseModal({
       setIsLoading(true);
       setError(null);
       
-      await unlock(encryptedPrivateKey, keyDerivationSalt, passphrase);
-      setPassphrase('');
-      onUnlocked();
+      const success = unlock(encryptedPrivateKey, keyDerivationSalt, passphrase);
+      if (success) {
+        setPassphrase('');
+        onUnlocked();
+      } else {
+        setError('Incorrect passphrase');
+        toast.error('Incorrect passphrase. Please try again.');
+      }
     } catch (err: any) {
       console.error('Failed to unlock:', err);
       setError('Incorrect passphrase');

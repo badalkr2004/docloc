@@ -36,6 +36,12 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     }
   }, [keys, keysLoading, isUnlocked]);
 
+  useEffect(() => {
+    const handleOpenPassphrase = () => setShowPassphrase(true);
+    document.addEventListener('open-passphrase-modal', handleOpenPassphrase);
+    return () => document.removeEventListener('open-passphrase-modal', handleOpenPassphrase);
+  }, []);
+
   if (sessionLoading || keysLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">

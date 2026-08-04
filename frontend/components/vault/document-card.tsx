@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { formatDistanceToNow } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
-import { RiEyeLine, RiFolderAddLine, RiShoppingCartLine, RiDeleteBinLine, RiMoreLine, RiFolderTransferLine } from '@remixicon/react';
+import { RiEyeLine, RiFolderAddLine, RiShoppingCartLine, RiDeleteBinLine, RiMoreLine, RiFolderTransferLine, RiEditLine } from '@remixicon/react';
 import { Card } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
@@ -29,6 +29,7 @@ import {
 } from '@/components/ui/dialog';
 import { MoveDialog } from './move-dialog';
 import { AddToBucketDialog } from './add-to-bucket-dialog';
+import { EditDocumentDialog } from './edit-document-dialog';
 
 interface DocumentCardProps {
   document: Document;
@@ -45,6 +46,7 @@ export function DocumentCard({ document, viewMode, onPreview }: DocumentCardProp
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showMoveDialog, setShowMoveDialog] = useState(false);
   const [showBucketDialog, setShowBucketDialog] = useState(false);
+  const [showEditDialog, setShowEditDialog] = useState(false);
 
   const updateDoc = useUpdateDocument();
   const deleteDoc = useDeleteDocument();
@@ -163,6 +165,10 @@ export function DocumentCard({ document, viewMode, onPreview }: DocumentCardProp
                 <DropdownMenu>
                   <DropdownMenuTrigger render={<Button variant="secondary" size="icon" className="h-8 w-8 rounded-full shadow-sm hover:scale-105 transition-transform"><RiMoreLine className="w-4 h-4" /></Button>} />
                   <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={() => setShowEditDialog(true)}>
+                      <RiEditLine className="w-4 h-4 mr-2" />
+                      Edit Details
+                    </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => setShowBucketDialog(true)}>
                       <RiFolderAddLine className="w-4 h-4 mr-2" />
                       Add to Bucket
@@ -252,6 +258,11 @@ export function DocumentCard({ document, viewMode, onPreview }: DocumentCardProp
         onOpenChange={setShowBucketDialog}
         documentId={document.id}
         documentTitle={document.title}
+      />
+      <EditDocumentDialog
+        open={showEditDialog}
+        onOpenChange={setShowEditDialog}
+        document={document}
       />
     </>
   );

@@ -20,10 +20,22 @@ export function AppHeader() {
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger render={
-              <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border ${isUnlocked ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20' : 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20'}`}>
+              <button
+                type="button"
+                onClick={() => {
+                  if (!isUnlocked) {
+                    document.dispatchEvent(new CustomEvent('open-passphrase-modal'));
+                  }
+                }}
+                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border transition-colors ${
+                  isUnlocked
+                    ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20'
+                    : 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20 cursor-pointer hover:bg-amber-500/20'
+                }`}
+              >
                 {isUnlocked ? <RiLockUnlockLine size={14} /> : <RiLockLine size={14} />}
-                <span>{isUnlocked ? 'Vault Unlocked' : 'Locked'}</span>
-              </div>
+                <span>{isUnlocked ? 'Vault Unlocked' : 'Click to Unlock'}</span>
+              </button>
             } />
             <TooltipContent>
               {isUnlocked ? 'End-to-end encryption keys loaded in memory' : 'Passphrase required to decrypt documents'}
