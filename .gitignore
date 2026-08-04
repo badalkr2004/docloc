@@ -1,0 +1,4 @@
+test-ui
+node_modules
+.env
+eng.traineddata

@@ -35,11 +35,26 @@ export const documents = pgTable('documents', {
   issueDate: timestamp('issue_date'),
   expiryDate: timestamp('expiry_date'),
   isDeleted: boolean('is_deleted').default(false).notNull(),
+  folderId: uuid('folder_id').references(() => folders.id, { onDelete: 'set null' }),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 }, (table) => [
   index('documents_owner_id_idx').on(table.ownerId),
   index('documents_ocr_text_idx').on(table.ocrText),
+  index('documents_folder_id_idx').on(table.folderId),
+]);
+
+export const folders = pgTable('folders', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  ownerId: text('owner_id').notNull().references(() => auth.user.id, { onDelete: 'cascade' }),
+  name: text('name').notNull(),
+  parentId: uuid('parent_id').references((): any => folders.id, { onDelete: 'cascade' }),
+  color: varchar('color', { length: 20 }),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+}, (table) => [
+  index('folders_owner_id_idx').on(table.ownerId),
+  index('folders_parent_id_idx').on(table.parentId),
 ]);
 
 export const buckets = pgTable('buckets', {
@@ -117,6 +132,7 @@ export const auditLogs = pgTable('audit_logs', {
 
 export const usersRelations = relations(auth.user, ({ many }) => ({
   documents: many(documents),
+  folders: many(folders),
   buckets: many(buckets),
   carts: many(carts),
   shareGrants: many(shareGrants),
@@ -125,6 +141,7 @@ export const usersRelations = relations(auth.user, ({ many }) => ({
 
 export const documentsRelations = relations(documents, ({ one, many }) => ({
   owner: one(auth.user, { fields: [documents.ownerId], references: [auth.user.id] }),
+  folder: one(folders, { fields: [documents.folderId], references: [folders.id] }),
   bucketDocuments: many(bucketDocuments),
   cartDocuments: many(cartDocuments),
   shareGrantDocuments: many(shareGrantDocuments),
@@ -168,4 +185,11 @@ export const auditLogsRelations = relations(auditLogs, ({ one }) => ({
   actor: one(auth.user, { fields: [auditLogs.actorUserId], references: [auth.user.id] }),
   document: one(documents, { fields: [auditLogs.documentId], references: [documents.id] }),
   shareGrant: one(shareGrants, { fields: [auditLogs.shareGrantId], references: [shareGrants.id] }),
+}));
+
+export const foldersRelations = relations(folders, ({ one, many }) => ({
+  owner: one(auth.user, { fields: [folders.ownerId], references: [auth.user.id] }),
+  parent: one(folders, { fields: [folders.parentId], references: [folders.id], relationName: 'folder_children' }),
+  children: many(folders, { relationName: 'folder_children' }),
+  documents: many(documents),
 }));

@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { db } from '../db';
 import { documents, bucketDocuments } from '../db/schema';
-import { eq, and, or, ilike, desc, lt, sql } from 'drizzle-orm';
+import { eq, and, or, ilike, desc, lt, sql, isNull } from 'drizzle-orm';
 import * as r2 from '../lib/r2';
 import { env } from '../config/env';
 import { ocrQueue } from '../workers/ocr.queue';
@@ -12,6 +12,7 @@ export const documentService = {
     fileSizeBytes: number; wrappedDek: string;
     encryptionAlgo?: string; maxPrivacy?: boolean;
     issueDate?: string; expiryDate?: string;
+    folderId?: string | null;
   }) {
     const id = randomUUID();
     const sanitizedTitle = data.title.replace(/[^a-zA-Z0-9.\-_]/g, '_');
@@ -31,6 +32,7 @@ export const documentService = {
       fileSizeBytes: data.fileSizeBytes,
       issueDate: data.issueDate ? new Date(data.issueDate) : null,
       expiryDate: data.expiryDate ? new Date(data.expiryDate) : null,
+      folderId: data.folderId || null,
     }).returning();
 
     const presignedUploadUrl = await r2.getPresignedUploadUrl(storageKey, data.mimeType);
@@ -47,6 +49,7 @@ export const documentService = {
 
   async list(ownerId: string, filters: {
     query?: string; docType?: string; bucketId?: string;
+    folderId?: string | null;
     expiryBefore?: string; page: number; limit: number;
   }) {
     const conditions = [eq(documents.ownerId, ownerId), eq(documents.isDeleted, false)];
@@ -62,6 +65,13 @@ export const documentService = {
     }
     if (filters.expiryBefore) {
       conditions.push(lt(documents.expiryDate, new Date(filters.expiryBefore)));
+    }
+    if (filters.folderId !== 'all') {
+      if (!filters.folderId || filters.folderId === 'root' || filters.folderId === 'null') {
+        conditions.push(isNull(documents.folderId));
+      } else {
+        conditions.push(eq(documents.folderId, filters.folderId));
+      }
     }
 
     const offset = (filters.page - 1) * filters.limit;
@@ -138,5 +148,17 @@ export const documentService = {
 
   async queueOcr(documentId: string, plaintextBase64: string, mimeType: string) {
     await ocrQueue.add('ocr', { documentId, plaintextBase64, mimeType });
+  },
+
+  async moveToFolder(documentId: string, ownerId: string, folderId: string | null) {
+    const doc = await this.getById(documentId, ownerId);
+    if (!doc) throw new Error('Document not found');
+
+    const [updated] = await db.update(documents)
+      .set({ folderId, updatedAt: new Date() })
+      .where(eq(documents.id, documentId))
+      .returning();
+      
+    return updated;
   }
 };

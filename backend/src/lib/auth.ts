@@ -16,7 +16,13 @@ export const auth = betterAuth({
     enabled: true,
     requireEmailVerification: false, // can enable later
   },
-  trustedOrigins: [env.CORS_ORIGIN],
+  trustedOrigins: [
+    env.CORS_ORIGIN,
+    'http://localhost:3000',
+    'http://127.0.0.1:3000',
+    'http://localhost:8000',
+    'http://127.0.0.1:8000',
+  ],
 
   session: {
     expiresIn: 60 * 60 * 24, // 24 hours
@@ -37,7 +43,11 @@ export const auth = betterAuth({
 
   advanced: {
     cookiePrefix: "docloc",
-    useSecureCookies: env.NODE_ENV === "production",
+    useSecureCookies: env.APP_URL.startsWith('https://'),
+    defaultCookieAttributes: {
+      sameSite: "lax",
+      secure: env.APP_URL.startsWith('https://'),
+    },
   },
 
   plugins: [

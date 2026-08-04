@@ -87,6 +87,19 @@ export const documentRoutes: FastifyPluginAsyncZod = async (fastify) => {
     return reply.send({ success: true });
   });
 
+  fastify.post('/:id/move', {
+    schema: { 
+      params: documentParamsSchema, 
+      body: z.object({ folderId: z.string().uuid().nullable() }) 
+    },
+    preHandler: requireAuth,
+  }, async (request, reply) => {
+    const { id } = request.params;
+    const { folderId } = request.body;
+    const document = await documentService.moveToFolder(id, request.user!.id, folderId);
+    return reply.send(document);
+  });
+
   fastify.get('/:id/download', {
     schema: { params: documentParamsSchema },
     preHandler: requireAuth,

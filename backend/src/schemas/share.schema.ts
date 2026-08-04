@@ -14,7 +14,7 @@ export const createShareGrantSchema = z.object({
 });
 
 export const verifyShareOtpSchema = z.object({
-  code: z.string().length(6),
+  code: z.string().optional().default(''),
 });
 
 export const shareTokenParamsSchema = z.object({

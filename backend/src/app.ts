@@ -7,6 +7,7 @@ import { env } from './config/env';
 import authPlugin from './plugins/auth.plugin';
 import { authRoutes } from './routes/auth.routes';
 import { documentRoutes } from './routes/document.routes';
+import { folderRoutes } from './routes/folder.routes';
 import { bucketRoutes } from './routes/bucket.routes';
 import { cartRoutes } from './routes/cart.routes';
 import { shareRoutes } from './routes/share.routes';
@@ -44,6 +45,7 @@ export async function buildApp() {
   // Routes
   await app.register(authRoutes, { prefix: '/api/auth' });
   await app.register(documentRoutes, { prefix: '/api/documents' });
+  await app.register(folderRoutes, { prefix: '/api/folders' });
   await app.register(bucketRoutes, { prefix: '/api/buckets' });
   await app.register(cartRoutes, { prefix: '/api/carts' });
   await app.register(shareRoutes, { prefix: '/api/share' });
