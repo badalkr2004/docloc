@@ -16,6 +16,7 @@ export const BucketSchema = z.object({
       required: z.boolean(),
     })
   ).nullable(),
+  documentCount: z.number().optional(),
   createdAt: z.string(),
   updatedAt: z.string(),
 });

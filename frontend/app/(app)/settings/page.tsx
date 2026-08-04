@@ -36,10 +36,10 @@ export default function SettingsPage() {
   };
 
   return (
-    <div className="p-6 max-w-4xl mx-auto space-y-8">
-      <div className="space-y-1">
-        <h1 className="text-3xl font-bold tracking-tight">Settings</h1>
-        <p className="text-muted-foreground">Manage your account preferences and security.</p>
+    <div className="p-4 sm:p-6 max-w-4xl mx-auto space-y-6 sm:space-y-8">
+      <div className="space-y-0.5 sm:space-y-1">
+        <h1 className="text-xl sm:text-3xl font-bold tracking-tight">Settings</h1>
+        <p className="text-xs sm:text-sm text-muted-foreground">Manage your account preferences and security.</p>
       </div>
 
       <div className="grid gap-8">

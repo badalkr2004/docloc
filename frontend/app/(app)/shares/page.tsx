@@ -48,10 +48,10 @@ export default function SharesPage() {
   const inactiveShares = shares?.filter(s => !!s.revokedAt || (!!s.expiresAt && new Date(s.expiresAt) <= new Date())) || [];
 
   return (
-    <div className="p-6 max-w-6xl mx-auto space-y-8">
-      <div className="space-y-1">
-        <h1 className="text-3xl font-bold tracking-tight">Shared Links</h1>
-        <p className="text-muted-foreground">Manage active share links and track access to your documents.</p>
+    <div className="p-4 sm:p-6 max-w-6xl mx-auto space-y-6 sm:space-y-8">
+      <div className="space-y-0.5 sm:space-y-1">
+        <h1 className="text-xl sm:text-3xl font-bold tracking-tight">Shared Links</h1>
+        <p className="text-xs sm:text-sm text-muted-foreground">Manage active share links and track access to your documents.</p>
       </div>
 
       {!shares || shares.length === 0 ? (

@@ -138,51 +138,99 @@ export function DocumentCard({ document, viewMode, onPreview }: DocumentCardProp
             )}
             
             {/* Quick Actions Hover Overlay */}
-            <div className="absolute inset-0 bg-background/80 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1.5 rounded-lg z-10">
+            <div 
+              className="stop-card-click absolute inset-0 bg-background/80 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1.5 rounded-lg z-10"
+              onClick={(e) => e.stopPropagation()}
+            >
               <TooltipProvider>
                 <Tooltip>
-                  <TooltipTrigger render={<Button variant="secondary" size="icon" className="h-8 w-8 rounded-full shadow-sm hover:scale-105 transition-transform" onClick={() => onPreview?.(document)}><RiEyeLine className="w-4 h-4 text-primary" /></Button>} />
+                  <TooltipTrigger render={
+                    <Button 
+                      variant="secondary" 
+                      size="icon" 
+                      className="h-8 w-8 rounded-full shadow-sm hover:scale-105 transition-transform" 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onPreview?.(document);
+                      }}
+                    >
+                      <RiEyeLine className="w-4 h-4 text-primary" />
+                    </Button>
+                  } />
                   <TooltipContent>Preview</TooltipContent>
                 </Tooltip>
 
                 <Tooltip>
-                  <TooltipTrigger render={<Button variant="secondary" size="icon" className="h-8 w-8 rounded-full shadow-sm hover:scale-105 transition-transform" onClick={() => setShowBucketDialog(true)}><RiFolderAddLine className="w-4 h-4" /></Button>} />
+                  <TooltipTrigger render={
+                    <Button 
+                      variant="secondary" 
+                      size="icon" 
+                      className="h-8 w-8 rounded-full shadow-sm hover:scale-105 transition-transform" 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setShowBucketDialog(true);
+                      }}
+                    >
+                      <RiFolderAddLine className="w-4 h-4" />
+                    </Button>
+                  } />
                   <TooltipContent>Add to Bucket</TooltipContent>
                 </Tooltip>
 
                 <Tooltip>
-                  <TooltipTrigger render={<Button variant="secondary" size="icon" className="h-8 w-8 rounded-full shadow-sm hover:scale-105 transition-transform" onClick={async () => {
-                    try {
-                      await addToCart.mutateAsync({ documentId: document.id });
-                      toast.success(`Added "${document.title}" to cart`);
-                    } catch (err: any) {
-                      toast.error('Failed to add to cart');
-                    }
-                  }}><RiShoppingCartLine className="w-4 h-4 text-primary" /></Button>} />
+                  <TooltipTrigger render={
+                    <Button 
+                      variant="secondary" 
+                      size="icon" 
+                      className="h-8 w-8 rounded-full shadow-sm hover:scale-105 transition-transform" 
+                      onClick={async (e) => {
+                        e.stopPropagation();
+                        try {
+                          await addToCart.mutateAsync({ documentId: document.id });
+                          toast.success(`Added "${document.title}" to cart`);
+                        } catch (err: any) {
+                          toast.error('Failed to add to cart');
+                        }
+                      }}
+                    >
+                      <RiShoppingCartLine className="w-4 h-4 text-primary" />
+                    </Button>
+                  } />
                   <TooltipContent>Add to Cart</TooltipContent>
                 </Tooltip>
 
-                <DropdownMenu>
-                  <DropdownMenuTrigger render={<Button variant="secondary" size="icon" className="h-8 w-8 rounded-full shadow-sm hover:scale-105 transition-transform"><RiMoreLine className="w-4 h-4" /></Button>} />
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={() => setShowEditDialog(true)}>
-                      <RiEditLine className="w-4 h-4 mr-2" />
-                      Edit Details
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => setShowBucketDialog(true)}>
-                      <RiFolderAddLine className="w-4 h-4 mr-2" />
-                      Add to Bucket
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => setShowMoveDialog(true)}>
-                      <RiFolderTransferLine className="w-4 h-4 mr-2" />
-                      Move to Folder
-                    </DropdownMenuItem>
-                    <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => setShowDeleteConfirm(true)}>
-                      <RiDeleteBinLine className="w-4 h-4 mr-2" />
-                      Delete
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                <div className="stop-card-click" onClick={(e) => e.stopPropagation()}>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger render={
+                      <Button 
+                        variant="secondary" 
+                        size="icon" 
+                        className="h-8 w-8 rounded-full shadow-sm hover:scale-105 transition-transform"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <RiMoreLine className="w-4 h-4" />
+                      </Button>
+                    } />
+                    <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+                      <DropdownMenuItem onClick={(e) => { e.stopPropagation(); setShowEditDialog(true); }}>
+                        <RiEditLine className="w-4 h-4 mr-2" />
+                        Edit Details
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={(e) => { e.stopPropagation(); setShowBucketDialog(true); }}>
+                        <RiFolderAddLine className="w-4 h-4 mr-2" />
+                        Add to Bucket
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={(e) => { e.stopPropagation(); setShowMoveDialog(true); }}>
+                        <RiFolderTransferLine className="w-4 h-4 mr-2" />
+                        Move to Folder
+                      </DropdownMenuItem>
+                      <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={(e) => { e.stopPropagation(); setShowDeleteConfirm(true); }}>
+                        <RiDeleteBinLine className="w-4 h-4 mr-2" />
+                        Delete
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
               </TooltipProvider>
             </div>
           </div>

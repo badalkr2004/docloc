@@ -33,16 +33,25 @@ export default function VaultPage() {
   const [createFolderOpen, setCreateFolderOpen] = useState(false);
   const [previewDoc, setPreviewDoc] = useState<Document | null>(null);
 
-  // Fetch documents for current folder
+  // Check if search query is active
+  const isSearching = Boolean(filters.query?.trim());
+  const searchQuery = (filters.query || '').trim().toLowerCase();
+
+  // Fetch documents for current folder or across all folders when searching
   const { data: documentsData, isLoading: docsLoading } = useDocuments({
     ...filters,
-    folderId: folderId || null,
+    folderId: isSearching ? 'all' : (folderId || null),
   });
   const documents = documentsData?.documents || [];
   const total = documentsData?.total || 0;
 
   // Fetch folders at current level
-  const { data: folders, isLoading: foldersLoading } = useFolders(folderId || null);
+  const { data: rawFolders, isLoading: foldersLoading } = useFolders(folderId || null);
+
+  // Filter folders by search query if searching
+  const folders = (rawFolders as FolderWithCount[] || []).filter((f) =>
+    isSearching ? f.name.toLowerCase().includes(searchQuery) : true
+  );
 
   // Move hooks for drag-and-drop
   const moveDocument = useMoveDocument();
@@ -86,12 +95,12 @@ export default function VaultPage() {
   };
 
   return (
-    <div className="container max-w-7xl mx-auto py-8 px-4 sm:px-6 flex flex-col min-h-[calc(100vh-4rem)]">
+    <div className="container max-w-7xl mx-auto py-4 sm:py-8 px-4 sm:px-6 flex flex-col min-h-[calc(100vh-4rem)]">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 sm:mb-6 gap-3 sm:gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Your Vault</h1>
-          <p className="text-muted-foreground mt-1">Securely manage and encrypt your private documents.</p>
+          <h1 className="text-xl sm:text-3xl font-bold tracking-tight">Your Vault</h1>
+          <p className="text-xs sm:text-sm text-muted-foreground mt-0.5 sm:mt-1">Securely manage and encrypt your private documents.</p>
         </div>
 
         <div className="flex items-center gap-2 w-full sm:w-auto">

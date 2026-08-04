@@ -1,5 +1,7 @@
-import { useMemo } from 'react';
+'use client';
+
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { formatDistanceToNow } from 'date-fns';
 import { motion } from 'framer-motion';
 import {
@@ -11,6 +13,8 @@ import {
   RiMore2Fill,
   RiDeleteBinLine,
   RiFolderOpenLine,
+  RiFileTextLine,
+  RiArrowRightLine,
 } from '@remixicon/react';
 import { Bucket, BucketType } from '@/lib/api/schemas';
 import {
@@ -45,105 +49,149 @@ interface BucketCardProps {
   isDeleting?: boolean;
 }
 
-const typeConfig: Record<BucketType, { icon: any; color: string; label: string }> = {
-  scholarship: { icon: RiGraduationCapLine, color: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400', label: 'Scholarship' },
-  admission: { icon: RiSchoolLine, color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400', label: 'Admission' },
-  visa: { icon: RiPassportLine, color: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400', label: 'Visa' },
-  job_application: { icon: RiBriefcaseLine, color: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400', label: 'Job Application' },
-  custom: { icon: RiFolder3Line, color: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400', label: 'Custom' },
+const typeConfig: Record<BucketType, { 
+  icon: any; 
+  gradient: string;
+  badgeBg: string;
+  badgeText: string;
+  label: string;
+}> = {
+  scholarship: {
+    icon: RiGraduationCapLine,
+    gradient: 'from-emerald-500/20 via-emerald-500/5 to-transparent border-emerald-500/30 text-emerald-500',
+    badgeBg: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20',
+    badgeText: 'text-emerald-500',
+    label: 'Scholarship',
+  },
+  admission: {
+    icon: RiSchoolLine,
+    gradient: 'from-blue-500/20 via-blue-500/5 to-transparent border-blue-500/30 text-blue-500',
+    badgeBg: 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20',
+    badgeText: 'text-blue-500',
+    label: 'Admission',
+  },
+  visa: {
+    icon: RiPassportLine,
+    gradient: 'from-indigo-500/20 via-indigo-500/5 to-transparent border-indigo-500/30 text-indigo-500',
+    badgeBg: 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/20',
+    badgeText: 'text-indigo-500',
+    label: 'Visa',
+  },
+  job_application: {
+    icon: RiBriefcaseLine,
+    gradient: 'from-amber-500/20 via-amber-500/5 to-transparent border-amber-500/30 text-amber-500',
+    badgeBg: 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20',
+    badgeText: 'text-amber-500',
+    label: 'Job Application',
+  },
+  custom: {
+    icon: RiFolder3Line,
+    gradient: 'from-purple-500/20 via-purple-500/5 to-transparent border-purple-500/30 text-purple-500',
+    badgeBg: 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20',
+    badgeText: 'text-purple-500',
+    label: 'Custom',
+  },
 };
 
 export function BucketCard({ bucket, onDelete, isDeleting }: BucketCardProps) {
+  const router = useRouter();
   const config = typeConfig[bucket.type] || typeConfig.custom;
   const Icon = config.icon;
-  const docCount = bucket.documents?.length || 0;
+  const docCount = bucket.documentCount ?? bucket.documents?.length ?? 0;
 
   return (
     <motion.div
-      whileHover={{ y: -4 }}
-      transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+      whileHover={{ y: -3 }}
+      transition={{ duration: 0.2, ease: 'easeOut' }}
+      className="h-full"
     >
-      <Card className="h-full flex flex-col group overflow-hidden transition-all hover:shadow-md border-border/50 hover:border-border">
-        <CardHeader className="pb-3 flex flex-row items-start justify-between space-y-0">
-          <div className="flex items-center space-x-3">
-            <div className={`p-2 rounded-lg ${config.color.split(' ')[0]} dark:${config.color.split(' ')[2]}`}>
+      <Card 
+        onClick={() => router.push(`/buckets/${bucket.id}`)}
+        className="h-full flex flex-col group cursor-pointer overflow-hidden transition-all duration-300 border-border/60 hover:border-primary/40 hover:shadow-xl hover:shadow-primary/5 relative bg-gradient-to-b from-card via-card to-muted/20"
+      >
+        <CardHeader className="pb-3 flex flex-row items-start justify-between space-y-0 relative z-10">
+          <div className="flex items-center space-x-3.5 min-w-0">
+            <div className={`p-2.5 rounded-xl border ${config.gradient} shadow-sm shrink-0 flex items-center justify-center`}>
               <Icon className="w-5 h-5" />
             </div>
-            <div>
-              <h3 className="font-semibold text-lg line-clamp-1" title={bucket.name}>
+            <div className="min-w-0 flex-1">
+              <h3 className="font-semibold text-base sm:text-lg line-clamp-1 group-hover:text-primary transition-colors" title={bucket.name}>
                 {bucket.name}
               </h3>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                {formatDistanceToNow(new Date(bucket.createdAt), { addSuffix: true })}
+              <p className="text-xs text-muted-foreground mt-0.5 font-medium">
+                Created {formatDistanceToNow(new Date(bucket.createdAt), { addSuffix: true })}
               </p>
             </div>
           </div>
 
-          <AlertDialog>
-            <DropdownMenu>
-              <DropdownMenuTrigger render={
-                <Button variant="ghost" size="icon" className="h-8 w-8 -mr-2 text-muted-foreground hover:text-foreground">
-                  <RiMore2Fill className="h-4 w-4" />
-                </Button>
-              } />
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem>
-                  <Link href={`/buckets/${bucket.id}`} className="cursor-pointer flex items-center">
-                    <RiFolderOpenLine className="mr-2 h-4 w-4" />
+          <div className="stop-card-click shrink-0 ml-2" onClick={(e) => e.stopPropagation()}>
+            <AlertDialog>
+              <DropdownMenu>
+                <DropdownMenuTrigger render={
+                  <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-muted/60 rounded-lg">
+                    <RiMore2Fill className="h-4 w-4" />
+                  </Button>
+                } />
+                <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+                  <DropdownMenuItem onClick={(e) => { e.stopPropagation(); router.push(`/buckets/${bucket.id}`); }}>
+                    <RiFolderOpenLine className="mr-2 h-4 w-4 text-primary" />
                     Open Bucket
-                  </Link>
-                </DropdownMenuItem>
-                {onDelete && (
-                  <AlertDialogTrigger>
-                    <DropdownMenuItem className="text-destructive focus:bg-destructive/10 focus:text-destructive cursor-pointer flex items-center">
-                      <RiDeleteBinLine className="mr-2 h-4 w-4" />
-                      Delete Bucket
-                    </DropdownMenuItem>
-                  </AlertDialogTrigger>
-                )}
-              </DropdownMenuContent>
-            </DropdownMenu>
+                  </DropdownMenuItem>
+                  {onDelete && (
+                    <AlertDialogTrigger>
+                      <DropdownMenuItem className="text-destructive focus:bg-destructive/10 focus:text-destructive cursor-pointer">
+                        <RiDeleteBinLine className="mr-2 h-4 w-4" />
+                        Delete Bucket
+                      </DropdownMenuItem>
+                    </AlertDialogTrigger>
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
 
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Delete Bucket</AlertDialogTitle>
-                <AlertDialogDescription>
-                  Are you sure you want to delete the bucket "{bucket.name}"? This action cannot be undone.
-                  The documents inside this bucket will not be deleted from your vault.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <AlertDialogAction 
-                  onClick={() => onDelete?.(bucket.id)}
-                  disabled={isDeleting}
-                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                >
-                  {isDeleting ? 'Deleting...' : 'Delete'}
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
+              <AlertDialogContent onClick={(e) => e.stopPropagation()}>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Delete Bucket</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Are you sure you want to delete &quot;{bucket.name}&quot;? This action cannot be undone.
+                    The documents inside this bucket will remain safe in your vault.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction 
+                    onClick={() => onDelete?.(bucket.id)}
+                    disabled={isDeleting}
+                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  >
+                    {isDeleting ? 'Deleting...' : 'Delete'}
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </div>
         </CardHeader>
         
         <CardContent className="pb-4 flex-1">
           {bucket.description ? (
-            <p className="text-sm text-muted-foreground line-clamp-2 mt-1 min-h-[40px]">
+            <p className="text-sm text-muted-foreground line-clamp-2 min-h-[40px] leading-relaxed">
               {bucket.description}
             </p>
           ) : (
-            <p className="text-sm text-muted-foreground/60 italic line-clamp-2 mt-1 min-h-[40px]">
+            <p className="text-sm text-muted-foreground/50 italic line-clamp-2 min-h-[40px] leading-relaxed">
               No description provided.
             </p>
           )}
         </CardContent>
 
-        <CardFooter className="pt-0 flex items-center justify-between">
-          <Badge variant="secondary" className={config.color + ' border-none font-medium'}>
+        <CardFooter className="pt-3 border-t border-border/40 flex items-center justify-between mt-auto bg-muted/10">
+          <Badge variant="outline" className={`px-2.5 py-0.5 text-xs font-semibold rounded-md border ${config.badgeBg}`}>
             {config.label}
           </Badge>
-          <div className="text-xs font-medium text-muted-foreground bg-secondary/50 px-2 py-1 rounded-md">
-            {docCount} {docCount === 1 ? 'doc' : 'docs'}
+          
+          <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground bg-muted/50 dark:bg-muted/30 px-2.5 py-1 rounded-md border border-border/40 group-hover:border-primary/30 transition-colors">
+            <RiFileTextLine className={`w-3.5 h-3.5 ${config.badgeText}`} />
+            <span>{docCount} {docCount === 1 ? 'doc' : 'docs'}</span>
+            <RiArrowRightLine className="w-3 h-3 ml-0.5 opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 transition-all text-primary" />
           </div>
         </CardFooter>
       </Card>

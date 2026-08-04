@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { db } from "../db";
 import { buckets, bucketDocuments, documents } from "../db/schema";
-import { eq, and, desc } from "drizzle-orm";
+import { eq, and, desc, count } from "drizzle-orm";
 
 export const bucketService = {
   async create(
@@ -28,11 +28,21 @@ export const bucketService = {
   },
 
   async list(ownerId: string) {
-    return db
-      .select()
+    const rows = await db
+      .select({
+        bucket: buckets,
+        documentCount: count(bucketDocuments.documentId),
+      })
       .from(buckets)
+      .leftJoin(bucketDocuments, eq(buckets.id, bucketDocuments.bucketId))
       .where(eq(buckets.ownerId, ownerId))
+      .groupBy(buckets.id)
       .orderBy(desc(buckets.createdAt));
+
+    return rows.map((row) => ({
+      ...row.bucket,
+      documentCount: Number(row.documentCount || 0),
+    }));
   },
 
   async getById(bucketId: string, ownerId: string) {

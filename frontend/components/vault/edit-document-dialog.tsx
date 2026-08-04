@@ -93,7 +93,7 @@ export function EditDocumentDialog({ open, onOpenChange, document }: EditDocumen
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-6">
+        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 pr-5 space-y-6">
           {/* Title / Name */}
           <div className="space-y-2">
             <Label htmlFor="doc-title" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">

@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -22,6 +23,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarFooter,
+  useSidebar,
 } from "@/components/ui/sidebar";
 
 const mainNav = [
@@ -38,11 +40,22 @@ const secondaryNav = [
 
 export function AppSidebar() {
   const pathname = usePathname();
+  const { isMobile, setOpenMobile } = useSidebar();
+
+  useEffect(() => {
+    if (isMobile) {
+      setOpenMobile(false);
+    }
+  }, [pathname, isMobile, setOpenMobile]);
 
   return (
     <Sidebar collapsible="icon">
       <SidebarHeader className="px-4 py-5 group-data-[collapsible=icon]:px-2">
-        <Link href="/vault" className="flex items-center gap-2 group-data-[collapsible=icon]:justify-center">
+        <Link 
+          href="/vault" 
+          onClick={() => isMobile && setOpenMobile(false)}
+          className="flex items-center gap-2 group-data-[collapsible=icon]:justify-center"
+        >
           <RiArchive2Line className="text-primary shrink-0" size={24} />
           <span className="font-heading text-lg font-bold tracking-tight group-data-[collapsible=icon]:hidden">
             Docloc
@@ -58,7 +71,12 @@ export function AppSidebar() {
               {mainNav.map((item) => (
                 <SidebarMenuItem key={item.href}>
                   <SidebarMenuButton
-                    render={<Link href={item.href} />}
+                    render={
+                      <Link 
+                        href={item.href} 
+                        onClick={() => isMobile && setOpenMobile(false)}
+                      />
+                    }
                     isActive={pathname.startsWith(item.href)}
                     tooltip={item.label}
                   >
@@ -78,7 +96,12 @@ export function AppSidebar() {
               {secondaryNav.map((item) => (
                 <SidebarMenuItem key={item.href}>
                   <SidebarMenuButton
-                    render={<Link href={item.href} />}
+                    render={
+                      <Link 
+                        href={item.href} 
+                        onClick={() => isMobile && setOpenMobile(false)}
+                      />
+                    }
                     isActive={pathname.startsWith(item.href)}
                     tooltip={item.label}
                   >
