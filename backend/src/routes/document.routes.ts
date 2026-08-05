@@ -143,6 +143,13 @@ export const documentRoutes: FastifyPluginAsyncZod = async (fastify) => {
     preHandler: requireAuth,
   }, async (request, reply) => {
     const { id } = request.params;
+    const doc = await documentService.getById(id, request.user!.id);
+    if (!doc) {
+      return reply.status(404).send({ error: 'Document not found' });
+    }
+    if (doc.maxPrivacy) {
+      return reply.status(403).send({ error: 'Server-side OCR is disabled for max-privacy documents. Use client-side OCR instead.' });
+    }
     const { plaintextBase64, mimeType } = request.body;
     await documentService.queueOcr(id, plaintextBase64, mimeType);
     return reply.send({ success: true });

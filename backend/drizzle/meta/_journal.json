@@ -15,6 +15,20 @@
       "when": 1785871629732,
       "tag": "0001_complete_warlock",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1785958151320,
+      "tag": "0002_natural_korath",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1785959214020,
+      "tag": "0003_clammy_elektra",
+      "breakpoints": true
     }
   ]
 }

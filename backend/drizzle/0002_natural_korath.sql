@@ -1,0 +1,1 @@
+CREATE INDEX "documents_owner_deleted_idx" ON "documents" USING btree ("owner_id","is_deleted");

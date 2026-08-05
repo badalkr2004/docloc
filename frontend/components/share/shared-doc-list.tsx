@@ -2,20 +2,19 @@
 
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { RiFileTextLine, RiImageLine, RiFilePdfLine, RiDownloadCloud2Line, RiEyeLine } from '@remixicon/react';
-import { base64ToBytes, unwrapDekWithShareKey, decryptDocumentFile } from '@/lib/crypto';
-import { gcm } from '@noble/ciphers/aes.js';
+import { Badge } from '@/components/ui/badge';
+import { 
+  RiFileTextLine, 
+  RiImageLine, 
+  RiFilePdfLine, 
+  RiDownloadCloud2Line, 
+  RiEyeLine,
+  RiLockLine
+} from '@remixicon/react';
+import { SharedDocumentViewer, type SharedDocument } from './shared-document-viewer';
+import { unwrapDekWithShareKey, decryptDocumentFile } from '@/lib/crypto';
 import { apiClient } from '@/lib/api/client';
 import { toast } from 'sonner';
-
-interface SharedDocument {
-  documentId: string;
-  title: string;
-  mimeType: string;
-  fileSizeBytes: number;
-  wrappedDekForGrant: string;
-  presignedUrl: string;
-}
 
 interface SharedDocListProps {
   documents: SharedDocument[];
@@ -33,14 +32,13 @@ function formatFileSize(bytes: number) {
 
 export function SharedDocList({ documents, shareKey, accessType }: SharedDocListProps) {
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const [previewDoc, setPreviewDoc] = useState<SharedDocument | null>(null);
+  const [activeViewerDoc, setActiveViewerDoc] = useState<SharedDocument | null>(null);
 
-  const processDocument = async (doc: SharedDocument): Promise<Blob | null> => {
+  const handleDownload = async (doc: SharedDocument) => {
     try {
       setDownloadingId(doc.documentId);
       
-      // 1. Fetch encrypted blob
+      // 1. Fetch encrypted file bytes
       let encryptedData: Uint8Array;
       if (doc.presignedUrl.startsWith('http://') || doc.presignedUrl.startsWith('https://')) {
         const res = await fetch(doc.presignedUrl);
@@ -52,131 +50,102 @@ export function SharedDocList({ documents, shareKey, accessType }: SharedDocList
         encryptedData = new Uint8Array(res.data);
       }
 
-      // 2. Decode the wrapped DEK
-      const wrappedDekCombined = base64ToBytes(doc.wrappedDekForGrant);
-      const nonce = wrappedDekCombined.slice(0, 12);
-      const ciphertext = wrappedDekCombined.slice(12);
+      // 2. Unwrap DEK using shareKey (base64url safe)
+      const dek = unwrapDekWithShareKey(doc.wrappedDekForGrant, shareKey);
 
-      // 3. Decode shareKey
-      const keyBytes = base64ToBytes(shareKey.replace(/-/g, '+').replace(/_/g, '/'));
-      
-      // 4. Unwrap DEK using shareKey
-      const cipher = gcm(keyBytes, nonce);
-      const dek = cipher.decrypt(ciphertext);
-
-      // 5. Decrypt document content
+      // 3. Decrypt document content
       const decryptedData = await decryptDocumentFile(encryptedData, dek);
       
-      return new Blob([decryptedData as unknown as BlobPart], { type: doc.mimeType });
-    } catch (error) {
-      console.error(error);
-      toast.error('Failed to decrypt document');
-      return null;
+      const blob = new Blob([decryptedData as unknown as BlobPart], { type: doc.mimeType });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = doc.title;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 10000);
+    } catch (error: any) {
+      console.error('Failed to download shared document:', error);
+      toast.error('Failed to decrypt document. Share key may be invalid.');
     } finally {
       setDownloadingId(null);
     }
   };
 
-  const handleDownload = async (doc: SharedDocument) => {
-    const blob = await processDocument(doc);
-    if (!blob) return;
-
-    // Trigger download
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = doc.title;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    setTimeout(() => URL.revokeObjectURL(url), 10000);
-  };
-
-  const handlePreview = async (doc: SharedDocument) => {
-    const blob = await processDocument(doc);
-    if (!blob) return;
-
-    const url = URL.createObjectURL(blob);
-    setPreviewUrl(url);
-    setPreviewDoc(doc);
-  };
-
-  if (previewUrl && previewDoc) {
-    return (
-      <div className="space-y-4">
-        <div className="flex items-center justify-between border-b pb-4">
-          <div className="font-medium">{previewDoc.title}</div>
-          <Button variant="outline" size="sm" onClick={() => {
-            URL.revokeObjectURL(previewUrl);
-            setPreviewUrl(null);
-            setPreviewDoc(null);
-          }}>
-            Close Preview
-          </Button>
-        </div>
-        <div className="bg-muted/30 border rounded-lg p-4 flex items-center justify-center min-h-[500px]">
-          {previewDoc.mimeType.startsWith('image/') ? (
-            <img src={previewUrl} alt={previewDoc.title} className="max-w-full max-h-[70vh] object-contain rounded-md shadow-sm" />
-          ) : previewDoc.mimeType === 'application/pdf' ? (
-            <iframe src={previewUrl} className="w-full h-[70vh] rounded-md shadow-sm border-0" />
-          ) : (
-            <div className="text-center text-muted-foreground">
-              Preview not available for this file type.
-            </div>
-          )}
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="space-y-4">
-      {documents.map((doc) => (
-        <div key={doc.documentId} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 border rounded-lg bg-card shadow-sm gap-4">
-          <div className="flex items-center gap-4 overflow-hidden">
-            <div className="p-3 bg-primary/10 rounded-lg shrink-0">
-              {doc.mimeType?.startsWith('image/') ? (
-                <RiImageLine className="h-6 w-6 text-primary" />
-              ) : doc.mimeType === 'application/pdf' ? (
-                <RiFilePdfLine className="h-6 w-6 text-primary" />
-              ) : (
-                <RiFileTextLine className="h-6 w-6 text-primary" />
-              )}
+    <>
+      <div className="space-y-3">
+        {documents.map((doc) => (
+          <div 
+            key={doc.documentId} 
+            className="group flex flex-col sm:flex-row sm:items-center justify-between p-4 border rounded-xl bg-card hover:border-primary/40 hover:shadow-md transition-all cursor-pointer gap-4"
+            onClick={() => setActiveViewerDoc(doc)}
+          >
+            <div className="flex items-center gap-4 overflow-hidden">
+              <div className="p-3 bg-primary/10 rounded-xl shrink-0 text-primary group-hover:scale-105 transition-transform">
+                {doc.mimeType?.startsWith('image/') ? (
+                  <RiImageLine className="h-6 w-6" />
+                ) : doc.mimeType === 'application/pdf' ? (
+                  <RiFilePdfLine className="h-6 w-6" />
+                ) : (
+                  <RiFileTextLine className="h-6 w-6" />
+                )}
+              </div>
+              <div className="min-w-0">
+                <p className="font-semibold truncate text-base text-card-foreground group-hover:text-primary transition-colors">
+                  {doc.title}
+                </p>
+                <div className="flex items-center gap-2 mt-1">
+                  <span className="text-xs text-muted-foreground font-medium">
+                    {formatFileSize(doc.fileSizeBytes)}
+                  </span>
+                  <span className="text-xs text-muted-foreground">•</span>
+                  <Badge variant="outline" className="text-[10px] font-mono uppercase px-1.5 py-0">
+                    {doc.mimeType.split('/')[1] || 'FILE'}
+                  </Badge>
+                  <span className="text-xs text-emerald-600 dark:text-emerald-400 flex items-center gap-1 font-mono text-[10px]">
+                    <RiLockLine className="w-3 h-3" /> E2EE
+                  </span>
+                </div>
+              </div>
             </div>
-            <div className="min-w-0">
-              <p className="font-medium truncate text-base">{doc.title}</p>
-              <p className="text-sm text-muted-foreground mt-0.5">
-                {formatFileSize(doc.fileSizeBytes)} • {doc.mimeType.split('/')[1]?.toUpperCase() || 'FILE'}
-              </p>
-            </div>
-          </div>
-          
-          <div className="flex items-center gap-2 shrink-0">
-            {(doc.mimeType.startsWith('image/') || doc.mimeType === 'application/pdf') && (
+            
+            <div className="flex items-center gap-2 shrink-0" onClick={(e) => e.stopPropagation()}>
               <Button 
                 variant="outline" 
-                className="gap-2"
-                onClick={() => handlePreview(doc)}
-                disabled={downloadingId === doc.documentId}
+                className="gap-2 border-border/60 hover:bg-muted"
+                onClick={() => setActiveViewerDoc(doc)}
               >
-                <RiEyeLine className="w-4 h-4" />
+                <RiEyeLine className="w-4 h-4 text-primary" />
                 Preview
               </Button>
-            )}
-            
-            {accessType === 'download' && (
-              <Button 
-                onClick={() => handleDownload(doc)}
-                disabled={downloadingId === doc.documentId}
-                className="gap-2"
-              >
-                <RiDownloadCloud2Line className="w-4 h-4" />
-                {downloadingId === doc.documentId ? 'Decrypting...' : 'Download'}
-              </Button>
-            )}
+              
+              {accessType === 'download' && (
+                <Button 
+                  onClick={() => handleDownload(doc)}
+                  disabled={downloadingId === doc.documentId}
+                  className="gap-2"
+                >
+                  <RiDownloadCloud2Line className="w-4 h-4" />
+                  {downloadingId === doc.documentId ? 'Decrypting...' : 'Download'}
+                </Button>
+              )}
+            </div>
           </div>
-        </div>
-      ))}
-    </div>
+        ))}
+      </div>
+
+      {/* Full-Screen Document Viewer matching Vault DocumentViewer */}
+      <SharedDocumentViewer
+        document={activeViewerDoc}
+        documents={documents}
+        isOpen={!!activeViewerDoc}
+        onClose={() => setActiveViewerDoc(null)}
+        onNavigate={(doc) => setActiveViewerDoc(doc)}
+        shareKey={shareKey}
+        accessType={accessType}
+      />
+    </>
   );
 }

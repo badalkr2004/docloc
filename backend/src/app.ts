@@ -1,9 +1,12 @@
-import Fastify from 'fastify';
+import Fastify, { FastifyError } from 'fastify';
 import cors from '@fastify/cors';
 import cookie from '@fastify/cookie';
 import multipart from '@fastify/multipart';
 import { serializerCompiler, validatorCompiler } from 'fastify-type-provider-zod';
 import { env } from './config/env';
+import { db } from './db';
+import { redis } from './lib/redis';
+import { sql } from 'drizzle-orm';
 import authPlugin from './plugins/auth.plugin';
 import { authRoutes } from './routes/auth.routes';
 import { documentRoutes } from './routes/document.routes';
@@ -51,12 +54,35 @@ export async function buildApp() {
   await app.register(shareRoutes, { prefix: '/api/share' });
   await app.register(auditRoutes, { prefix: '/api/audit' });
 
-  // Health check
-  app.get('/health', async () => ({ status: 'ok', timestamp: new Date().toISOString() }));
+  // Health check with deep DB and Redis checks
+  app.get('/health', async (request, reply) => {
+    const checks: Record<string, string> = {};
+    try {
+      await db.execute(sql`SELECT 1`);
+      checks.database = 'ok';
+    } catch {
+      checks.database = 'error';
+    }
+
+    try {
+      await redis.ping();
+      checks.redis = 'ok';
+    } catch {
+      checks.redis = 'error';
+    }
+
+    const healthy = Object.values(checks).every((v) => v === 'ok');
+    const statusCode = healthy ? 200 : 503;
+    return reply.status(statusCode).send({
+      status: healthy ? 'ok' : 'degraded',
+      checks,
+      timestamp: new Date().toISOString(),
+    });
+  });
 
   // Global error handler for Zod errors
-  app.setErrorHandler((error, request, reply) => {
-    if (error.validation) {
+  app.setErrorHandler((error: FastifyError, request, reply) => {
+    if ('validation' in error && error.validation) {
       return reply.status(400).send({
         error: 'Validation Error',
         details: error.validation,
@@ -65,7 +91,9 @@ export async function buildApp() {
     
     app.log.error(error);
     return reply.status(error.statusCode || 500).send({
-      error: error.message || 'Internal Server Error',
+      error: env.NODE_ENV === 'production'
+        ? 'Internal Server Error'
+        : (error.message || 'Internal Server Error'),
     });
   });
 

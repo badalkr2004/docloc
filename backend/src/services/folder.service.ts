@@ -5,15 +5,17 @@ import { eq, and, desc, isNull, sql } from 'drizzle-orm';
 
 export const folderService = {
   async getDepth(folderId: string): Promise<number> {
-    let depth = 0;
-    let currentId = folderId;
-    while (currentId) {
-      const [f] = await db.select({ parentId: folders.parentId }).from(folders).where(eq(folders.id, currentId));
-      if (!f || !f.parentId) break;
-      depth++;
-      currentId = f.parentId;
-    }
-    return depth;
+    const result = await db.execute(sql`
+      WITH RECURSIVE ancestors AS (
+        SELECT id, parent_id, 0 AS depth
+        FROM folders WHERE id = ${folderId}
+        UNION ALL
+        SELECT f.id, f.parent_id, a.depth + 1
+        FROM folders f JOIN ancestors a ON f.id = a.parent_id
+      )
+      SELECT COALESCE(MAX(depth), 0) AS depth FROM ancestors
+    `);
+    return Number((result as any).rows?.[0]?.depth ?? (result as any)[0]?.depth ?? 0);
   },
 
   async create(ownerId: string, data: { name: string; parentId?: string; color?: string }) {
@@ -89,18 +91,24 @@ export const folderService = {
       const newParent = await this.getById(newParentId, ownerId);
       if (!newParent) throw new Error('New parent folder not found');
 
-      // Check circular reference
-      let currentId = newParentId;
-      let newDepth = 0;
-      while (currentId) {
-        if (currentId === id) throw new Error('Cannot move folder into its own child');
-        const [p] = await db.select({ parentId: folders.parentId }).from(folders).where(eq(folders.id, currentId));
-        if (!p || !p.parentId) break;
-        currentId = p.parentId;
-        newDepth++;
-      }
-
-      if (newDepth >= 9) throw new Error('Maximum folder depth (10) exceeded');
+      // Check circular reference and depth using a single CTE
+      const result = await db.execute(sql`
+        WITH RECURSIVE ancestors AS (
+          SELECT id, parent_id, 0 AS depth
+          FROM folders WHERE id = ${newParentId}
+          UNION ALL
+          SELECT f.id, f.parent_id, a.depth + 1
+          FROM folders f JOIN ancestors a ON f.id = a.parent_id
+          WHERE a.depth < 15
+        )
+        SELECT 
+          bool_or(id = ${id}) AS is_circular,
+          COALESCE(MAX(depth), 0) AS max_depth
+        FROM ancestors
+      `);
+      const row = (result as any).rows?.[0] ?? (result as any)[0];
+      if (row?.is_circular) throw new Error('Cannot move folder into its own child');
+      if (Number(row?.max_depth ?? 0) >= 9) throw new Error('Maximum folder depth (10) exceeded');
     }
 
     const [updated] = await db.update(folders)
@@ -119,20 +127,18 @@ export const folderService = {
   },
 
   async getBreadcrumbs(id: string, ownerId: string) {
-    const breadcrumbs: { id: string; name: string }[] = [];
-    let currentId = id;
-    
-    while (currentId) {
-      const [folder] = await db.select({ id: folders.id, name: folders.name, parentId: folders.parentId })
-        .from(folders)
-        .where(and(eq(folders.id, currentId), eq(folders.ownerId, ownerId)));
-        
-      if (!folder) break;
-      breadcrumbs.unshift({ id: folder.id, name: folder.name });
-      if (!folder.parentId) break;
-      currentId = folder.parentId;
-    }
-    
-    return breadcrumbs;
+    const result = await db.execute(sql`
+      WITH RECURSIVE ancestors AS (
+        SELECT id, name, parent_id, 0 AS depth
+        FROM folders WHERE id = ${id} AND owner_id = ${ownerId}
+        UNION ALL
+        SELECT f.id, f.name, f.parent_id, a.depth + 1
+        FROM folders f JOIN ancestors a ON f.id = a.parent_id
+        WHERE f.owner_id = ${ownerId}
+      )
+      SELECT id, name FROM ancestors ORDER BY depth DESC
+    `);
+    const rows = (result as any).rows ?? result;
+    return (rows as { id: string; name: string }[]);
   }
 };

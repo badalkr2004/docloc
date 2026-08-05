@@ -5,6 +5,8 @@ import { eq, and, desc } from 'drizzle-orm';
 import * as appCrypto from '../lib/crypto';
 import * as r2 from '../lib/r2';
 import { env } from '../config/env';
+import { redis } from '../lib/redis';
+import { sendShareOtpEmail } from '../lib/email';
 
 export const shareService = {
   async createGrant(ownerId: string, data: {
@@ -20,34 +22,39 @@ export const shareService = {
     const expiresAt = new Date(Date.now() + data.expiresInHours * 3600000);
     const shareGrantId = randomUUID();
 
-    const [shareGrant] = await db.insert(shareGrants).values({
-      id: shareGrantId,
-      cartId: data.cartId,
-      createdBy: ownerId,
-      recipientEmail: data.recipientEmail || null,
-      recipientPhone: data.recipientPhone || null,
-      accessType: data.accessType,
-      requireOtp: data.requireOtp,
-      shareToken,
-      expiresAt,
-    }).returning();
+    const [shareGrant] = await db.transaction(async (tx) => {
+      const [sg] = await tx.insert(shareGrants).values({
+        id: shareGrantId,
+        cartId: data.cartId,
+        createdBy: ownerId,
+        recipientEmail: data.recipientEmail || null,
+        recipientPhone: data.recipientPhone || null,
+        accessType: data.accessType,
+        requireOtp: data.requireOtp,
+        shareToken,
+        expiresAt,
+      }).returning();
 
-    if (data.wrappedDeks.length > 0) {
-      await db.insert(shareGrantDocuments).values(
-        data.wrappedDeks.map(wd => ({
-          shareGrantId,
-          documentId: wd.documentId,
-          wrappedDekForGrant: wd.wrappedDekForGrant,
-        }))
-      );
-    }
+      if (data.wrappedDeks.length > 0) {
+        await tx.insert(shareGrantDocuments).values(
+          data.wrappedDeks.map(wd => ({
+            shareGrantId,
+            documentId: wd.documentId,
+            wrappedDekForGrant: wd.wrappedDekForGrant,
+          }))
+        );
+      }
 
-    await db.update(carts).set({ status: 'shared' }).where(eq(carts.id, data.cartId));
+      await tx.update(carts).set({ status: 'shared' }).where(eq(carts.id, data.cartId));
+      return [sg];
+    });
 
+    // Generate and send OTP after transaction commits
     if (data.requireOtp && data.recipientEmail) {
       const otp = appCrypto.generateOtp();
-      console.log(`Stub: Sending OTP ${otp} to ${data.recipientEmail}`);
-      // TODO: implement real OTP hash and store logic
+      const hashedOtp = appCrypto.hashOtp(otp);
+      await redis.set(`share-otp:${shareGrantId}`, hashedOtp, 'EX', 600); // 10 min TTL
+      await sendShareOtpEmail(data.recipientEmail, otp);
     }
 
     return { shareGrant, shareUrl: `${env.APP_URL}/share/${shareToken}` };
@@ -59,11 +66,12 @@ export const shareService = {
 
     const [cart] = await db.select().from(carts).where(eq(carts.id, grant.cartId));
     
-    const now = new Date();
-    const isExpired = grant.expiresAt && new Date(grant.expiresAt) < now;
+    const now = Date.now();
+    const expiresAtMs = grant.expiresAt ? new Date(grant.expiresAt).getTime() : null;
+    const isExpired = expiresAtMs !== null && expiresAtMs < now;
     const isRevoked = grant.revokedAt !== null;
 
-    return { grant, isExpired: !!isExpired, isRevoked, cart };
+    return { grant, isExpired, isRevoked, cart };
   },
 
   async getDocumentsForGrant(shareGrantId: string) {
@@ -92,8 +100,14 @@ export const shareService = {
   },
 
   async verifyRecipientOtp(shareGrantId: string, code: string) {
-    // Stub
-    return { verified: true };
+    const storedHash = await redis.get(`share-otp:${shareGrantId}`);
+    if (!storedHash) return { verified: false };
+
+    const isValid = appCrypto.verifyOtp(code, storedHash);
+    if (isValid) {
+      await redis.del(`share-otp:${shareGrantId}`); // one-time use
+    }
+    return { verified: isValid };
   },
 
   async revoke(shareGrantId: string, ownerId: string) {

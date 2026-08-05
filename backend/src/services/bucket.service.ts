@@ -8,7 +8,7 @@ export const bucketService = {
     ownerId: string,
     data: {
       name: string;
-      type: string;
+      type: 'scholarship' | 'admission' | 'visa' | 'job_application' | 'custom';
       description?: string;
       checklistTemplate?: Array<{ docType: string; required: boolean }>;
     },

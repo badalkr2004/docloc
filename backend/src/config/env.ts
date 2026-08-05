@@ -9,15 +9,12 @@ const envSchema = z.object({
   R2_BUCKET_NAME: z.string().min(1),
   BETTER_AUTH_SECRET: z.string().min(32),
   BETTER_AUTH_URL: z.string().url(),
-  PORT: z.coerce.number().default(3000),
+  PORT: z.coerce.number().default(8000),
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
   APP_URL: z.string().url(),
-  CORS_ORIGIN: z.string().default('http://localhost:5173'),
-  SMTP_HOST: z.string().min(1),
-  SMTP_PORT: z.coerce.number().default(587),
-  SMTP_USER: z.string().min(1),
-  SMTP_PASS: z.string().min(1),
-  SMTP_FROM: z.string().email(),
+  CORS_ORIGIN: z.string().default('http://localhost:3000'),
+  RESEND_API_KEY: z.string().min(1),
+  EMAIL_FROM: z.string().email().default('noreply@docloc.app'),
 });
 
 export type Env = z.infer<typeof envSchema>;

@@ -1,14 +1,15 @@
 import { randomUUID } from 'node:crypto';
 import { db } from '../db';
 import { documents, bucketDocuments } from '../db/schema';
-import { eq, and, or, ilike, desc, lt, sql, isNull } from 'drizzle-orm';
+import { eq, and, or, ilike, desc, lt, sql, isNull, type SQL } from 'drizzle-orm';
 import * as r2 from '../lib/r2';
 import { env } from '../config/env';
 import { ocrQueue } from '../workers/ocr.queue';
+import { docTypeValues } from '../schemas/document.schema';
 
 export const documentService = {
   async create(ownerId: string, data: {
-    title: string; docType: string; mimeType: string;
+    title: string; docType: (typeof docTypeValues)[number]; mimeType: string;
     fileSizeBytes: number; wrappedDek: string;
     encryptionAlgo?: string; maxPrivacy?: boolean;
     issueDate?: string; expiryDate?: string;
@@ -52,16 +53,17 @@ export const documentService = {
     folderId?: string | null;
     expiryBefore?: string; page: number; limit: number;
   }) {
-    const conditions = [eq(documents.ownerId, ownerId), eq(documents.isDeleted, false)];
+    const conditions: SQL[] = [eq(documents.ownerId, ownerId), eq(documents.isDeleted, false)];
     
     if (filters.query) {
-      conditions.push(or(
+      const searchCondition = or(
         ilike(documents.title, `%${filters.query}%`),
         ilike(documents.ocrText, `%${filters.query}%`)
-      ));
+      );
+      if (searchCondition) conditions.push(searchCondition);
     }
     if (filters.docType) {
-      conditions.push(eq(documents.docType, filters.docType));
+      conditions.push(eq(documents.docType, filters.docType as any));
     }
     if (filters.expiryBefore) {
       conditions.push(lt(documents.expiryDate, new Date(filters.expiryBefore)));

@@ -36,7 +36,7 @@ export const shareRoutes: FastifyPluginAsyncZod = async (fastify) => {
     if (!grantResult || grantResult.isExpired || grantResult.isRevoked) {
       return reply.status(400).send({ error: 'Invalid or expired share token' });
     }
-    
+
     const result = await shareService.verifyRecipientOtp(grantResult.grant.id, code);
     
     if (result.verified) {

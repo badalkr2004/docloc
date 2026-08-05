@@ -3,6 +3,7 @@ import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { twoFactor } from "better-auth/plugins";
 import { db } from "../db";
 import { env } from "../config/env";
+import { sendTwoFactorOtpEmail } from "./email";
 
 export const auth = betterAuth({
   database: drizzleAdapter(db, {
@@ -18,10 +19,6 @@ export const auth = betterAuth({
   },
   trustedOrigins: [
     env.CORS_ORIGIN,
-    'http://localhost:3000',
-    'http://127.0.0.1:3000',
-    'http://localhost:8000',
-    'http://127.0.0.1:8000',
   ],
 
   session: {
@@ -55,8 +52,7 @@ export const auth = betterAuth({
       issuer: "DocLocker",
       otpOptions: {
         async sendOTP({ user, otp }) {
-          // TODO: Integrate email provider (Resend, Nodemailer, etc.)
-          console.log(`[OTP] Sending 2FA code ${otp} to ${user.email}`);
+          await sendTwoFactorOtpEmail(user.email, otp);
         },
       },
     }),

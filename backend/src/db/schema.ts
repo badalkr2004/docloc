@@ -42,6 +42,7 @@ export const documents = pgTable('documents', {
   index('documents_owner_id_idx').on(table.ownerId),
   index('documents_ocr_text_idx').on(table.ocrText),
   index('documents_folder_id_idx').on(table.folderId),
+  index('documents_owner_deleted_idx').on(table.ownerId, table.isDeleted),
 ]);
 
 export const folders = pgTable('folders', {
@@ -100,9 +101,9 @@ export const shareGrants = pgTable('share_grants', {
   accessType: shareAccessEnum('access_type').notNull(),
   requireOtp: boolean('require_otp').default(true).notNull(),
   shareToken: text('share_token').notNull().unique(),
-  expiresAt: timestamp('expires_at'),
-  revokedAt: timestamp('revoked_at'),
-  createdAt: timestamp('created_at').notNull().defaultNow(),
+  expiresAt: timestamp('expires_at', { mode: 'date', withTimezone: true }),
+  revokedAt: timestamp('revoked_at', { mode: 'date', withTimezone: true }),
+  createdAt: timestamp('created_at', { mode: 'date', withTimezone: true }).notNull().defaultNow(),
 }, (t) => [
   index('share_grants_token_idx').on(t.shareToken),
 ]);

@@ -1,6 +1,8 @@
 import { buildApp } from './app';
 import { env } from './config/env';
 import { queryClient } from './db';
+import { ocrQueue } from './workers/ocr.queue';
+import { redis } from './lib/redis';
 
 async function main() {
   const app = await buildApp();
@@ -9,6 +11,8 @@ async function main() {
   const shutdown = async (signal: string) => {
     app.log.info(`Received ${signal}, shutting down...`);
     await app.close();
+    await ocrQueue.close();
+    await redis.quit();
     await queryClient.end();
     process.exit(0);
   };
