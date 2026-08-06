@@ -66,11 +66,12 @@ export function useSignOut() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async () => {
-      const { data } = await apiClient.post('/api/auth/sign-out');
+      const { data } = await apiClient.post('/api/auth/sign-out', {});
       return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: authKeys.session() });
+      window.location.href = '/login';
     },
   });
 }

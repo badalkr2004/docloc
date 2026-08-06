@@ -237,8 +237,8 @@ export function DocumentCard({ document, viewMode, onPreview }: DocumentCardProp
                   onPreview?.(document);
                 }}
               >
-                <RiEyeLine className="w-3 h-3 text-sky-600 dark:text-sky-400 shrink-0" />
-                <span>Preview</span>
+                <RiEyeLine className="w-4 h-4 sm:w-3 sm:h-3 text-sky-600 dark:text-sky-400 shrink-0" />
+                <span className={isGrid ? "hidden sm:inline" : ""}>Preview</span>
               </Button>
 
               <Button 
@@ -250,8 +250,8 @@ export function DocumentCard({ document, viewMode, onPreview }: DocumentCardProp
                   setShowBucketDialog(true);
                 }}
               >
-                <RiFolderAddLine className="w-3 h-3 text-amber-600 dark:text-amber-400 shrink-0" />
-                <span>Bucket</span>
+                <RiFolderAddLine className="w-4 h-4 sm:w-3 sm:h-3 text-amber-600 dark:text-amber-400 shrink-0" />
+                <span className={isGrid ? "hidden sm:inline" : ""}>Bucket</span>
               </Button>
 
               <Button 
@@ -261,8 +261,8 @@ export function DocumentCard({ document, viewMode, onPreview }: DocumentCardProp
                 onClick={handleAddToCart}
                 disabled={addToCart.isPending}
               >
-                <RiShoppingCartLine className="w-3 h-3 text-emerald-600 dark:text-emerald-400 shrink-0" />
-                <span>Cart</span>
+                <RiShoppingCartLine className="w-4 h-4 sm:w-3 sm:h-3 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                <span className={isGrid ? "hidden sm:inline" : ""}>Cart</span>
               </Button>
             </div>
 

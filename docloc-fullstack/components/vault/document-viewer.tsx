@@ -32,7 +32,9 @@ import {
   RiFileTextLine,
   RiEyeLine,
   RiEditLine,
+  RiShareForwardLine,
 } from '@remixicon/react';
+import { toast } from 'sonner';
 import { EditDocumentDialog } from './edit-document-dialog';
 
 interface DocumentViewerProps {
@@ -64,6 +66,7 @@ const sidebarVariants = {
 export function DocumentViewer({ document, documents, isOpen, onClose, onNavigate }: DocumentViewerProps) {
   const { secretKey } = useCryptoStore();
   const [blobUrl, setBlobUrl] = useState<string | null>(null);
+  const [decryptedBlob, setDecryptedBlob] = useState<Blob | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showInfo, setShowInfo] = useState(false);
@@ -106,6 +109,7 @@ export function DocumentViewer({ document, documents, isOpen, onClose, onNavigat
       setLoading(true);
       setError(null);
       setBlobUrl(null);
+      setDecryptedBlob(null);
       setZoom(1);
       setPan({ x: 0, y: 0 });
 
@@ -143,6 +147,7 @@ export function DocumentViewer({ document, documents, isOpen, onClose, onNavigat
         const blob = new Blob([decryptedBuffer as any], { type: document.mimeType });
         url = URL.createObjectURL(blob);
         setBlobUrl(url);
+        setDecryptedBlob(blob);
 
         apiClient.post(`/api/documents/${document.id}/audit`, { action: 'view' }).catch(() => {});
       } catch (err: any) {
@@ -216,6 +221,32 @@ export function DocumentViewer({ document, documents, isOpen, onClose, onNavigat
     }
   };
 
+  const handleNativeShare = async () => {
+    if (!decryptedBlob || !document) return;
+    
+    // Construct File object for the Share API
+    const extension = document.mimeType.split('/')[1] || 'bin';
+    const filename = document.title.includes('.') ? document.title : `${document.title}.${extension}`;
+    const file = new File([decryptedBlob], filename, { type: document.mimeType });
+    
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      try {
+        await navigator.share({
+          files: [file],
+          title: document.title,
+        });
+      } catch (err: any) {
+        if (err.name !== 'AbortError') {
+          console.error('Error sharing:', err);
+        }
+      }
+    } else {
+      toast.error('Native file sharing is not supported on this browser/device. Please download the file instead.', {
+        duration: 4000
+      });
+    }
+  };
+
   if (!document) return null;
 
   return (
@@ -238,7 +269,7 @@ export function DocumentViewer({ document, documents, isOpen, onClose, onNavigat
               initial="hidden"
               animate="visible"
               exit="exit"
-              className="relative z-10 flex items-center justify-between h-14 px-4 border-b border-border/40 bg-background/80 backdrop-blur-md shrink-0"
+              className="relative z-20 flex items-center justify-between h-14 px-4 border-b border-border/40 bg-background/80 backdrop-blur-md shrink-0 pt-[env(safe-area-inset-top)]"
             >
               {/* Left: Back + Title */}
               <div className="flex items-center gap-3 min-w-0 flex-1">
@@ -287,8 +318,8 @@ export function DocumentViewer({ document, documents, isOpen, onClose, onNavigat
                 </Button>
               </div>
 
-              {/* Right: Actions */}
-              <div className="flex items-center gap-1 shrink-0">
+              {/* Right: Actions (Desktop Only) */}
+              <div className="hidden sm:flex items-center gap-1 shrink-0">
                 {isImage && (
                   <div className="hidden sm:flex items-center gap-0.5 mr-1 border rounded-full px-1 bg-muted/30">
                     <Button variant="ghost" size="icon" className="h-7 w-7 rounded-full" onClick={() => setZoom(z => Math.max(z - 0.25, 0.25))}>
@@ -320,8 +351,20 @@ export function DocumentViewer({ document, documents, isOpen, onClose, onNavigat
                   variant="ghost"
                   size="icon"
                   className="h-9 w-9 rounded-full"
+                  onClick={handleNativeShare}
+                  disabled={!decryptedBlob}
+                  title="Share Natively"
+                >
+                  <RiShareForwardLine className="w-4 h-4" />
+                </Button>
+
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-9 w-9 rounded-full"
                   onClick={handleDownload}
                   disabled={!blobUrl}
+                  title="Download File"
                 >
                   <RiDownloadLine className="w-4 h-4" />
                 </Button>
@@ -338,13 +381,62 @@ export function DocumentViewer({ document, documents, isOpen, onClose, onNavigat
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-9 w-9 rounded-full"
+                  className="h-9 w-9 rounded-full sm:hidden"
                   onClick={onClose}
                 >
                   <RiCloseLine className="w-5 h-5" />
                 </Button>
               </div>
             </motion.header>
+
+            {/* Mobile Bottom Action Bar */}
+            <motion.div
+              variants={contentVariants}
+              initial="hidden"
+              animate="visible"
+              exit="exit"
+              className="absolute bottom-6 left-1/2 -translate-x-1/2 z-30 sm:hidden w-[90%] max-w-sm mb-[env(safe-area-inset-bottom)]"
+            >
+              <div className="flex items-center justify-around bg-background/85 backdrop-blur-2xl border border-border/60 shadow-[0_8px_30px_rgb(0,0,0,0.12)] dark:shadow-[0_8px_30px_rgba(0,0,0,0.3)] rounded-full px-2 py-1.5">
+                <Button
+                  variant="ghost"
+                  className="flex-col h-auto py-2 gap-1 rounded-xl w-14 hover:bg-muted/50"
+                  onClick={() => setShowEditDialog(true)}
+                >
+                  <RiEditLine className="w-5 h-5" />
+                  <span className="text-[9px] font-medium">Edit</span>
+                </Button>
+
+                <Button
+                  variant="ghost"
+                  className="flex-col h-auto py-2 gap-1 rounded-xl w-14 hover:bg-muted/50 text-primary"
+                  onClick={handleNativeShare}
+                  disabled={!decryptedBlob}
+                >
+                  <RiShareForwardLine className="w-5 h-5" />
+                  <span className="text-[9px] font-medium">Share</span>
+                </Button>
+
+                <Button
+                  variant="ghost"
+                  className="flex-col h-auto py-2 gap-1 rounded-xl w-14 hover:bg-muted/50"
+                  onClick={handleDownload}
+                  disabled={!blobUrl}
+                >
+                  <RiDownloadLine className="w-5 h-5" />
+                  <span className="text-[9px] font-medium">Save</span>
+                </Button>
+
+                <Button
+                  variant={showInfo ? 'secondary' : 'ghost'}
+                  className="flex-col h-auto py-2 gap-1 rounded-xl w-14 hover:bg-muted/50"
+                  onClick={() => setShowInfo(prev => !prev)}
+                >
+                  <RiInformationLine className="w-5 h-5" />
+                  <span className="text-[9px] font-medium">Info</span>
+                </Button>
+              </div>
+            </motion.div>
 
             {/* Main Content Area */}
             <div className="relative flex-1 flex overflow-hidden">

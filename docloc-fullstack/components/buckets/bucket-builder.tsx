@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { 
   RiShareForwardLine, 
@@ -21,6 +21,9 @@ import { DocTypeIcon } from '@/components/common/doc-type-icon';
 import { DocTypeBadge } from '@/components/common/doc-type-badge';
 import { formatFileSize } from '@/components/common/file-size';
 import { toast } from 'sonner';
+import { useCryptoStore } from '@/stores/crypto-store';
+import { unwrapDek, decryptDocumentFile, base64ToBytes } from '@/lib/crypto';
+import { apiClient } from '@/lib/api/client';
 
 export function BucketBuilder({ id }: { id: string }) {
   const router = useRouter();
@@ -28,10 +31,17 @@ export function BucketBuilder({ id }: { id: string }) {
   const { mutate: removeDoc } = useRemoveDocFromBucket(id);
   const { mutateAsync: createCart } = useCreateCart();
   const { mutateAsync: addBucketToCart } = useAddBucketToCart();
+  const { secretKey } = useCryptoStore();
   
   const [isSharing, setIsSharing] = useState(false);
+  const [isNativeSharing, setIsNativeSharing] = useState(false);
+  const [preparedFiles, setPreparedFiles] = useState<File[] | null>(null);
 
   const existingDocIds = new Set(bucket?.documents?.map(d => d.id) || []);
+
+  useEffect(() => {
+    setPreparedFiles(null);
+  }, [bucket?.documents]);
 
   const handleRemove = (docId: string) => {
     removeDoc({ bucketId: id, documentId: docId }, {
@@ -59,6 +69,88 @@ export function BucketBuilder({ id }: { id: string }) {
     } catch (err) {
       toast.error('Failed to share bucket');
       setIsSharing(false);
+    }
+  };
+
+  const handleNativeShareBucket = async () => {
+    if (!bucket || !bucket.documents || bucket.documents.length === 0) {
+      toast.error('Add documents to the bucket before sharing');
+      return;
+    }
+    if (!secretKey) {
+      toast.error('Vault is locked. Please unlock first.');
+      return;
+    }
+    if (!navigator.canShare) {
+      toast.error('Native sharing is not supported on this browser/device.');
+      return;
+    }
+
+    if (preparedFiles) {
+      try {
+        if (navigator.canShare({ files: preparedFiles })) {
+          await navigator.share({
+            files: preparedFiles,
+            title: bucket.name,
+          });
+        }
+      } catch (err: any) {
+        if (err.name !== 'AbortError') {
+          console.error(err);
+          toast.error(err.message || 'Failed to share files');
+        }
+      }
+      return;
+    }
+
+    try {
+      setIsNativeSharing(true);
+      toast.loading(`Preparing ${bucket.documents.length} files...`, { id: 'native-share' });
+      
+      const files: File[] = [];
+      
+      for (const doc of bucket.documents) {
+        // 1. Get download URL
+        const downloadRes = await apiClient.get<{ presignedUrl?: string; downloadUrl?: string }>(`/api/documents/${doc.id}/download`);
+        const downloadUrl = downloadRes.data.presignedUrl || downloadRes.data.downloadUrl;
+        if (!downloadUrl) throw new Error(`Failed to get download URL for ${doc.title}`);
+
+        // 2. Fetch encrypted bytes
+        let arrayBuffer: ArrayBuffer;
+        if (downloadUrl.startsWith('data:')) {
+          const base64Data = downloadUrl.split(',')[1];
+          arrayBuffer = base64ToBytes(base64Data).buffer as ArrayBuffer;
+        } else if (downloadUrl.startsWith('http://') || downloadUrl.startsWith('https://')) {
+          const fileRes = await fetch(downloadUrl);
+          if (!fileRes.ok) throw new Error(`Failed to download ${doc.title}`);
+          arrayBuffer = await fileRes.arrayBuffer();
+        } else {
+          const fileRes = await apiClient.get(downloadUrl, { responseType: 'arraybuffer' });
+          arrayBuffer = fileRes.data;
+        }
+        
+        // 3. Decrypt
+        const dek = await unwrapDek(doc.wrappedDek, secretKey);
+        const decryptedBuffer = decryptDocumentFile(new Uint8Array(arrayBuffer), dek);
+        
+        // 4. Create File
+        const extension = doc.mimeType.split('/')[1] || 'bin';
+        const filename = doc.title.includes('.') ? doc.title : `${doc.title}.${extension}`;
+        files.push(new File([decryptedBuffer as any], filename, { type: doc.mimeType }));
+      }
+      
+      setPreparedFiles(files);
+      toast.dismiss('native-share');
+      toast.success('Files ready! Click "Share Now" to open the share menu.', { duration: 4000 });
+      
+    } catch (err: any) {
+      if (err.name !== 'AbortError') {
+        console.error(err);
+        toast.error(err.message || 'Failed to prepare files');
+      }
+      toast.dismiss('native-share');
+    } finally {
+      setIsNativeSharing(false);
     }
   };
 
@@ -152,13 +244,23 @@ export function BucketBuilder({ id }: { id: string }) {
         
         <div className="flex items-center gap-2">
           <Button 
+            variant="outline" 
+            onClick={handleNativeShareBucket}
+            disabled={isNativeSharing || existingDocIds.size === 0}
+            className="shadow-sm"
+          >
+            <RiShareForwardLine className="w-4 h-4 mr-2" />
+            {isNativeSharing ? 'Decrypting...' : preparedFiles ? 'Share Now' : 'Native Share'}
+          </Button>
+
+          <Button 
             variant="default" 
             onClick={handleShare}
             disabled={isSharing || existingDocIds.size === 0}
             className="shadow-sm"
           >
             <RiShareForwardLine className="w-4 h-4 mr-2" />
-            {isSharing ? 'Preparing...' : 'Share Bucket'}
+            {isSharing ? 'Preparing...' : 'Secure Link'}
           </Button>
         </div>
       </header>
