@@ -254,7 +254,7 @@ export function DocumentViewer({ document, documents, isOpen, onClose, onNavigat
       <AnimatePresence>
         {isOpen && (
           <motion.div
-            className="fixed inset-0 z-50 flex flex-col"
+            className="fixed inset-0 z-[60] flex flex-col"
             variants={overlayVariants}
             initial="hidden"
             animate="visible"
@@ -519,7 +519,7 @@ export function DocumentViewer({ document, documents, isOpen, onClose, onNavigat
                         }}
                         draggable={false}
                       />
-                    ) : isPdf ? (
+                    ) : isPdf && (typeof window !== 'undefined' && window.innerWidth >= 768) ? (
                       <iframe
                         src={`${blobUrl}#toolbar=1&navpanes=0`}
                         className="w-full h-full border-0"
@@ -535,8 +535,10 @@ export function DocumentViewer({ document, documents, isOpen, onClose, onNavigat
                           <p className="text-sm text-muted-foreground mb-1">
                             {fileExtension} • {formatFileSize(document.fileSizeBytes)}
                           </p>
-                          <p className="text-xs text-muted-foreground">
-                            Preview not available for this file type
+                          <p className="text-xs text-muted-foreground px-4">
+                            {isPdf 
+                              ? "Mobile browsers don't support inline PDF previews. Please download or share the file to view it." 
+                              : "Preview not available for this file type."}
                           </p>
                         </div>
                         <Button onClick={handleDownload} className="gap-2">
