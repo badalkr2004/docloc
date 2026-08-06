@@ -1,0 +1,15 @@
+export const env = {
+  get DATABASE_URL() { return process.env.DATABASE_URL || ''; },
+  get R2_ACCOUNT_ID() { return process.env.R2_ACCOUNT_ID || ''; },
+  get R2_ACCESS_KEY_ID() { return process.env.R2_ACCESS_KEY_ID || ''; },
+  get R2_SECRET_ACCESS_KEY() { return process.env.R2_SECRET_ACCESS_KEY || ''; },
+  get R2_BUCKET_NAME() { return process.env.R2_BUCKET_NAME || 'docloc-vault'; },
+  get BETTER_AUTH_SECRET() { return process.env.BETTER_AUTH_SECRET || 'fallback_secret_32_characters_long_min'; },
+  get BETTER_AUTH_URL() { return process.env.BETTER_AUTH_URL || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'; },
+  get NODE_ENV() { return process.env.NODE_ENV || 'development'; },
+  get APP_URL() { return process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'; },
+  get RESEND_API_KEY() { return process.env.RESEND_API_KEY || ''; },
+  get EMAIL_FROM() { return process.env.EMAIL_FROM || 'noreply@docloc.app'; },
+  get UPSTASH_REDIS_REST_URL() { return process.env.UPSTASH_REDIS_REST_URL || ''; },
+  get UPSTASH_REDIS_REST_TOKEN() { return process.env.UPSTASH_REDIS_REST_TOKEN || ''; },
+};
