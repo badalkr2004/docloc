@@ -10,8 +10,8 @@ export const auth = betterAuth({
     provider: "pg",
   }),
 
-  baseURL: process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : env.BETTER_AUTH_URL,
-  trustedOrigins: process.env.VERCEL_URL ? [`https://${process.env.VERCEL_URL}`] : [],
+  baseURL: env.BETTER_AUTH_URL,
+  trustedOrigins: [env.BETTER_AUTH_URL],
   secret: env.BETTER_AUTH_SECRET,
 
   emailAndPassword: {
@@ -38,10 +38,10 @@ export const auth = betterAuth({
 
   advanced: {
     cookiePrefix: "docloc",
-    useSecureCookies: env.APP_URL.startsWith('https://'),
+    useSecureCookies: env.APP_URL.startsWith("https://"),
     defaultCookieAttributes: {
       sameSite: "lax",
-      secure: env.APP_URL.startsWith('https://'),
+      secure: env.APP_URL.startsWith("https://"),
     },
   },
 
