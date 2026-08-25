@@ -1,3 +1,5 @@
+export const runtime = 'nodejs';
+
 import { NextResponse } from 'next/server';
 import { getAuthSession } from '@/lib/server/get-auth';
 import { cartService } from '@/lib/services/cart.service';
@@ -24,3 +26,4 @@ export async function POST(req: Request) {
   const cart = await cartService.create(session.user.id, parsed.data.label);
   return NextResponse.json(cart, { status: 201 });
 }
+

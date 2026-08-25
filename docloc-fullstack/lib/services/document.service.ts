@@ -118,7 +118,13 @@ export const documentService = {
     const doc = await this.getById(documentId, ownerId);
     if (!doc) throw new Error('Document not found');
 
-    const updateData: any = { updatedAt: new Date() };
+    const updateData: {
+      updatedAt: Date;
+      title?: string;
+      docType?: string;
+      issueDate?: Date | null;
+      expiryDate?: Date | null;
+    } = { updatedAt: new Date() };
     if (patch.title !== undefined) updateData.title = patch.title;
     if (patch.docType !== undefined) updateData.docType = patch.docType;
     if (patch.issueDate !== undefined) updateData.issueDate = patch.issueDate ? new Date(patch.issueDate) : null;

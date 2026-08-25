@@ -1,3 +1,5 @@
+export const runtime = 'nodejs';
+
 import { NextResponse } from 'next/server';
 import { getAuthSession } from '@/lib/server/get-auth';
 import { auditService } from '@/lib/services/audit.service';
@@ -13,3 +15,4 @@ export async function GET(req: Request) {
   const result = await auditService.getByUser(session.user.id, page, limit);
   return NextResponse.json(result);
 }
+

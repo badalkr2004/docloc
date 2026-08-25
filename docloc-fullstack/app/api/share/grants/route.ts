@@ -1,3 +1,5 @@
+export const runtime = 'nodejs';
+
 import { NextResponse } from 'next/server';
 import { getAuthSession } from '@/lib/server/get-auth';
 import { shareService } from '@/lib/services/share.service';
@@ -13,3 +15,4 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: error.message || 'Error fetching grants' }, { status: 500 });
   }
 }
+

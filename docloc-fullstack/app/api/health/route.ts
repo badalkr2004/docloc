@@ -1,3 +1,5 @@
+export const runtime = 'nodejs';
+
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { sql } from 'drizzle-orm';
@@ -18,3 +20,4 @@ export async function GET() {
     timestamp: new Date().toISOString(),
   }, { status: healthy ? 200 : 503 });
 }
+

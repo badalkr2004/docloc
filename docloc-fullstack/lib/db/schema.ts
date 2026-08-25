@@ -51,11 +51,13 @@ export const folders = pgTable('folders', {
   name: text('name').notNull(),
   parentId: uuid('parent_id').references((): any => folders.id, { onDelete: 'cascade' }),
   color: varchar('color', { length: 20 }),
+  isDeleted: boolean('is_deleted').default(false).notNull(),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 }, (table) => [
   index('folders_owner_id_idx').on(table.ownerId),
   index('folders_parent_id_idx').on(table.parentId),
+  index('folders_owner_deleted_idx').on(table.ownerId, table.isDeleted),
 ]);
 
 export const buckets = pgTable('buckets', {
@@ -75,6 +77,7 @@ export const bucketDocuments = pgTable('bucket_documents', {
   addedAt: timestamp('added_at').notNull().defaultNow(),
 }, (t) => [
   primaryKey({ columns: [t.bucketId, t.documentId] }),
+  index('bucket_documents_document_id_idx').on(t.documentId),
 ]);
 
 export const carts = pgTable('carts', {

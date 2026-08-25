@@ -1,3 +1,5 @@
+export const runtime = 'nodejs';
+
 import { NextResponse } from 'next/server';
 import { getAuthSession } from '@/lib/server/get-auth';
 import { folderService } from '@/lib/services/folder.service';
@@ -30,3 +32,4 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: err.message || 'Error creating folder' }, { status: 400 });
   }
 }
+

@@ -22,7 +22,7 @@ export const folderService = {
     if (data.parentId) {
       const parent = await this.getById(data.parentId, ownerId);
       if (!parent) throw new Error('Parent folder not found');
-      
+
       const parentDepth = await this.getDepth(data.parentId);
       if (parentDepth >= 9) throw new Error('Maximum folder depth (10) exceeded');
     }
@@ -39,7 +39,10 @@ export const folderService = {
   },
 
   async list(ownerId: string, parentId?: string | null) {
-    const conditions = [eq(folders.ownerId, ownerId)];
+    const conditions = [
+      eq(folders.ownerId, ownerId),
+      eq(folders.isDeleted, false),
+    ];
     if (!parentId || parentId === 'root' || parentId === 'null') {
       conditions.push(isNull(folders.parentId));
     } else if (parentId !== 'all') {
@@ -62,7 +65,9 @@ export const folderService = {
   },
 
   async getById(id: string, ownerId: string) {
-    const [folder] = await db.select().from(folders).where(and(eq(folders.id, id), eq(folders.ownerId, ownerId)));
+    const [folder] = await db.select().from(folders).where(
+      and(eq(folders.id, id), eq(folders.ownerId, ownerId), eq(folders.isDeleted, false))
+    );
     return folder || null;
   },
 
@@ -70,7 +75,9 @@ export const folderService = {
     const folder = await this.getById(id, ownerId);
     if (!folder) throw new Error('Folder not found');
 
-    const updateData: any = { updatedAt: new Date() };
+    const updateData: { name?: string; color?: string | null; updatedAt: Date } = {
+      updatedAt: new Date(),
+    };
     if (data.name !== undefined) updateData.name = data.name;
     if (data.color !== undefined) updateData.color = data.color;
 
@@ -91,6 +98,7 @@ export const folderService = {
       const newParent = await this.getById(newParentId, ownerId);
       if (!newParent) throw new Error('New parent folder not found');
 
+      // Check circular reference and depth using a single CTE
       const result = await db.execute(sql`
         WITH RECURSIVE ancestors AS (
           SELECT id, parent_id, 0 AS depth
@@ -118,22 +126,27 @@ export const folderService = {
     return updated;
   },
 
+  // Soft-delete: marks folder as deleted instead of removing it from DB.
+  // Child folders and documents retain their folderId; they will be
+  // invisible since the parent is gone, but can be recovered if needed.
   async delete(id: string, ownerId: string) {
     const folder = await this.getById(id, ownerId);
     if (!folder) throw new Error('Folder not found');
 
-    await db.delete(folders).where(eq(folders.id, id));
+    await db.update(folders)
+      .set({ isDeleted: true, updatedAt: new Date() })
+      .where(eq(folders.id, id));
   },
 
   async getBreadcrumbs(id: string, ownerId: string) {
     const result = await db.execute(sql`
       WITH RECURSIVE ancestors AS (
         SELECT id, name, parent_id, 0 AS depth
-        FROM folders WHERE id = ${id} AND owner_id = ${ownerId}
+        FROM folders WHERE id = ${id} AND owner_id = ${ownerId} AND is_deleted = false
         UNION ALL
         SELECT f.id, f.name, f.parent_id, a.depth + 1
         FROM folders f JOIN ancestors a ON f.id = a.parent_id
-        WHERE f.owner_id = ${ownerId}
+        WHERE f.owner_id = ${ownerId} AND f.is_deleted = false
       )
       SELECT id, name FROM ancestors ORDER BY depth DESC
     `);

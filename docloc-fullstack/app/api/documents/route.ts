@@ -1,3 +1,5 @@
+export const runtime = 'nodejs';
+
 import { NextResponse } from 'next/server';
 import { getAuthSession } from '@/lib/server/get-auth';
 import { documentService } from '@/lib/services/document.service';
@@ -40,3 +42,4 @@ export async function POST(req: Request) {
 
   return NextResponse.json(result, { status: 201 });
 }
+

@@ -217,6 +217,19 @@ export function DocumentCard({ document, viewMode, onPreview }: DocumentCardProp
                 <div className={`flex items-center gap-1.5 ${isGrid ? 'flex-wrap mt-auto' : 'flex-nowrap'}`}>
                   <DocTypeBadge docType={document.docType} />
                   <StatusBadge expiryDate={document.expiryDate} />
+                  {document.expiryDate && (() => {
+                    const daysLeft = Math.ceil(
+                      (new Date(document.expiryDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24)
+                    );
+                    if (daysLeft > 0 && daysLeft <= 30) {
+                      return (
+                        <span className="inline-flex items-center rounded-full px-1.5 py-0.5 text-[9px] font-semibold bg-orange-500/15 text-orange-600 dark:text-orange-400 border border-orange-500/30 shrink-0">
+                          ⚠ {daysLeft}d
+                        </span>
+                      );
+                    }
+                    return null;
+                  })()}
                   <div className="text-[10px] text-muted-foreground flex gap-1 ml-auto font-mono">
                     <span>{formatFileSize(document.fileSizeBytes)}</span>
                     {isGrid && <span>•</span>}

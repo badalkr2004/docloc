@@ -1,3 +1,5 @@
+export const runtime = 'nodejs';
+
 import { NextResponse } from 'next/server';
 import { getAuthSession } from '@/lib/server/get-auth';
 import { bucketService } from '@/lib/services/bucket.service';
@@ -24,3 +26,4 @@ export async function POST(req: Request) {
   const bucket = await bucketService.create(session.user.id, parsed.data);
   return NextResponse.json(bucket, { status: 201 });
 }
+
