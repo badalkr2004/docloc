@@ -64,9 +64,12 @@ export function UploadDialog({ open, onOpenChange, folderId }: UploadDialogProps
       // 1. Read file & Encrypt client-side
       const arrayBuffer = await item.file.arrayBuffer();
       const fileBytes = new Uint8Array(arrayBuffer);
+      const publicKey = keys!.publicKey;
+      if (!publicKey) throw new Error('Public key not available. Please unlock your vault.');
+
       const { encryptedFileBytes, wrappedDekBase64 } = await encryptDocumentForUpload(
         fileBytes,
-        keys!.publicKey
+        publicKey
       );
 
       updateItem(item.id, { status: 'creating', progress: 30 });

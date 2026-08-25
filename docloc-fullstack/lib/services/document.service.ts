@@ -112,7 +112,7 @@ export const documentService = {
   },
 
   async update(documentId: string, ownerId: string, patch: {
-    title?: string; docType?: string;
+    title?: string; docType?: (typeof docTypeValues)[number];
     issueDate?: string | null; expiryDate?: string | null;
   }) {
     const doc = await this.getById(documentId, ownerId);
@@ -121,7 +121,7 @@ export const documentService = {
     const updateData: {
       updatedAt: Date;
       title?: string;
-      docType?: string;
+      docType?: (typeof docTypeValues)[number];
       issueDate?: Date | null;
       expiryDate?: Date | null;
     } = { updatedAt: new Date() };
