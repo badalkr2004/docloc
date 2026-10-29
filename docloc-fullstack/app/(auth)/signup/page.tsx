@@ -14,7 +14,6 @@ import { apiClient } from '@/lib/api/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { generateUserKeyPair, encryptPrivateKeyWithPassphrase } from '@/lib/crypto';
 import { useCryptoStore } from '@/stores/crypto-store';
 

@@ -13,7 +13,6 @@ import { apiClient } from '@/lib/api/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { PassphraseModal } from '@/components/auth/passphrase-modal';
 
 const loginSchema = z.object({
@@ -155,6 +154,7 @@ export default function LoginPage() {
                   type="email"
                   placeholder="you@example.com"
                   className="pl-10 h-11 bg-background/50 backdrop-blur-sm transition-all focus:bg-background"
+                  autoComplete="email"
                   {...register('email')}
                   disabled={isLoading}
                 />
@@ -165,9 +165,7 @@ export default function LoginPage() {
             </div>
             
             <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Label htmlFor="password" className="font-medium">Password</Label>
-              </div>
+              <Label htmlFor="password" className="font-medium">Account password</Label>
               <div className="relative">
                 <RiLockPasswordLine className="absolute left-3 top-3 h-5 w-5 text-muted-foreground/70 z-10 pointer-events-none" />
                 <Input
@@ -175,6 +173,7 @@ export default function LoginPage() {
                   type="password"
                   placeholder="••••••••"
                   className="pl-10 h-11 bg-background/50 backdrop-blur-sm transition-all focus:bg-background"
+                  autoComplete="current-password"
                   {...register('password')}
                   disabled={isLoading}
                 />
