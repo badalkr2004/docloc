@@ -21,9 +21,10 @@ import { RiCheckLine, RiLoader4Line } from '@remixicon/react';
 interface ShareWizardProps {
   cartId: string;
   documents: Document[];
+  onShareComplete?: (shareUrl: string) => void;
 }
 
-export function ShareWizard({ cartId, documents }: ShareWizardProps) {
+export function ShareWizard({ cartId, documents, onShareComplete }: ShareWizardProps) {
   const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
   const { data: session } = useSession();
   const { secretKey } = useCryptoStore();
@@ -86,6 +87,7 @@ export function ShareWizard({ cartId, documents }: ShareWizardProps) {
       
       setShareUrl(finalUrl);
       setStep(4);
+      onShareComplete?.(finalUrl);
     } catch (error: any) {
       if (error?.response?.status === 403) {
         setIsReauthOpen(true);
@@ -129,9 +131,18 @@ export function ShareWizard({ cartId, documents }: ShareWizardProps) {
             >
               <div className="text-center space-y-2 mb-6">
                 <h3 className="text-xl font-semibold">Ready to share?</h3>
-                <p className="text-muted-foreground">You are about to share {documents.length} document{documents.length !== 1 && 's'}.</p>
+                <p className="text-muted-foreground">
+                  {documents.length === 0
+                    ? 'Add documents to your cart before creating a share link.'
+                    : `You are about to share ${documents.length} document${documents.length !== 1 ? 's' : ''}.`}
+                </p>
               </div>
-              <Button className="w-full" size="lg" onClick={() => setStep(2)}>
+              <Button
+                className="w-full"
+                size="lg"
+                onClick={() => setStep(2)}
+                disabled={documents.length === 0}
+              >
                 Configure Share Settings
               </Button>
             </motion.div>
@@ -147,14 +158,21 @@ export function ShareWizard({ cartId, documents }: ShareWizardProps) {
             >
               <div className="space-y-4">
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">Recipient Email (Optional)</label>
+                  <label className="text-sm font-medium">
+                    Recipient Email {requireOtp ? '' : '(Optional)'}
+                  </label>
                   <Input 
                     type="email" 
                     placeholder="recipient@example.com" 
                     value={recipientEmail}
                     onChange={(e) => setRecipientEmail(e.target.value)}
+                    required={requireOtp}
                   />
-                  <p className="text-xs text-muted-foreground">If provided, they will receive the OTP here.</p>
+                  <p className="text-xs text-muted-foreground">
+                    {requireOtp
+                      ? 'Required when OTP is enabled — the code is emailed here.'
+                      : 'If provided, they will receive the OTP here when enabled.'}
+                  </p>
                 </div>
 
                 <div className="space-y-2">
@@ -196,7 +214,22 @@ export function ShareWizard({ cartId, documents }: ShareWizardProps) {
 
               <div className="flex gap-3">
                 <Button variant="outline" className="flex-1" onClick={() => setStep(1)}>Back</Button>
-                <Button className="flex-1" onClick={executeShare}>Generate Share Link</Button>
+                <Button
+                  className="flex-1"
+                  onClick={() => {
+                    if (requireOtp && !recipientEmail.trim()) {
+                      toast.error('Enter a recipient email when OTP is required.');
+                      return;
+                    }
+                    if (documents.length === 0) {
+                      toast.error('Add documents to the cart before sharing.');
+                      return;
+                    }
+                    executeShare();
+                  }}
+                >
+                  Generate Share Link
+                </Button>
               </div>
             </motion.div>
           )}

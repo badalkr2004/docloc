@@ -195,6 +195,12 @@ export function RecipientView({ token }: { token: string }) {
           </div>
         ) : (
           <div className="space-y-6">
+            {!shareKey && (
+              <div className="max-w-xl mx-auto rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-800 dark:text-amber-200">
+                This link is missing the decryption key (the <code className="font-mono text-xs">#key=…</code> part).
+                Ask the sender to copy the <strong>full</strong> share link again.
+              </div>
+            )}
             <div className="bg-card border rounded-xl p-6 shadow-sm">
               <h3 className="text-lg font-medium mb-4 pb-4 border-b">
                 Available Documents

@@ -6,7 +6,8 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { RiShareLine, RiLinksLine, RiTimeLine, RiCloseCircleLine } from '@remixicon/react';
+import { RiLinksLine } from '@remixicon/react';
+import Link from 'next/link';
 import { toast } from 'sonner';
 
 export default function SharesPage() {
@@ -60,7 +61,10 @@ export default function SharesPage() {
             <RiLinksLine className="w-8 h-8" />
           </div>
           <h3 className="text-xl font-semibold mb-2">No active shares</h3>
-          <p className="text-muted-foreground max-w-sm mb-6">You haven't shared any documents yet. Go to your Cart to create secure share links.</p>
+          <p className="text-muted-foreground max-w-sm mb-6">
+            You haven&apos;t shared any documents yet. Build a cart, then generate a secure link.
+          </p>
+          <Button render={<Link href="/cart" />}>Go to Cart</Button>
         </div>
       ) : (
         <div className="space-y-8">

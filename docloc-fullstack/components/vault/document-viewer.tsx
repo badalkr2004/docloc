@@ -223,27 +223,38 @@ export function DocumentViewer({ document, documents, isOpen, onClose, onNavigat
 
   const handleNativeShare = async () => {
     if (!decryptedBlob || !document) return;
-    
-    // Construct File object for the Share API
-    const extension = document.mimeType.split('/')[1] || 'bin';
+
+    const extension = document.mimeType.split('/')[1]?.split(';')[0] || 'bin';
     const filename = document.title.includes('.') ? document.title : `${document.title}.${extension}`;
-    const file = new File([decryptedBlob], filename, { type: document.mimeType });
-    
-    if (navigator.canShare && navigator.canShare({ files: [file] })) {
-      try {
-        await navigator.share({
-          files: [file],
-          title: document.title,
-        });
-      } catch (err: any) {
-        if (err.name !== 'AbortError') {
-          console.error('Error sharing:', err);
-        }
-      }
-    } else {
-      toast.error('Native file sharing is not supported on this browser/device. Please download the file instead.', {
-        duration: 4000
+    // Plain ArrayBuffer-backed File — required for reliable mobile Web Share
+    const buffer = await decryptedBlob.arrayBuffer();
+    const file = new File([buffer], filename, {
+      type: document.mimeType || 'application/octet-stream',
+      lastModified: Date.now(),
+    });
+
+    if (!navigator.share) {
+      toast.error('Native sharing is not supported on this device. Download the file instead.', {
+        duration: 4000,
       });
+      return;
+    }
+
+    const payload = { files: [file], title: document.title };
+    if (typeof navigator.canShare === 'function' && !navigator.canShare(payload)) {
+      toast.error('This file cannot be shared natively. Please download it instead.', {
+        duration: 4000,
+      });
+      return;
+    }
+
+    try {
+      await navigator.share(payload);
+    } catch (err: any) {
+      if (err?.name !== 'AbortError') {
+        console.error('Error sharing:', err);
+        toast.error(err?.message || 'Failed to share file');
+      }
     }
   };
 
@@ -519,12 +530,29 @@ export function DocumentViewer({ document, documents, isOpen, onClose, onNavigat
                         }}
                         draggable={false}
                       />
-                    ) : isPdf && (typeof window !== 'undefined' && window.innerWidth >= 768) ? (
-                      <iframe
-                        src={`${blobUrl}#toolbar=1&navpanes=0`}
-                        className="w-full h-full border-0"
-                        title={document.title}
-                      />
+                    ) : isPdf ? (
+                      <div className="relative w-full h-full flex flex-col">
+                        <iframe
+                          src={`${blobUrl}#toolbar=1&navpanes=0&view=FitH`}
+                          className="w-full flex-1 border-0 bg-background"
+                          title={document.title}
+                        />
+                        {/* Fallback actions for browsers that blank the iframe */}
+                        <div className="sm:hidden shrink-0 flex gap-2 p-3 border-t bg-background/95">
+                          <Button
+                            variant="outline"
+                            className="flex-1 gap-2"
+                            onClick={() => window.open(blobUrl, '_blank', 'noopener,noreferrer')}
+                          >
+                            <RiEyeLine className="w-4 h-4" />
+                            Open PDF
+                          </Button>
+                          <Button className="flex-1 gap-2" onClick={handleDownload}>
+                            <RiDownloadLine className="w-4 h-4" />
+                            Download
+                          </Button>
+                        </div>
+                      </div>
                     ) : (
                       <div className="flex flex-col items-center gap-6 p-12 bg-card rounded-2xl border shadow-lg max-w-sm text-center">
                         <div className="h-20 w-20 rounded-2xl bg-muted/50 flex items-center justify-center">
@@ -536,9 +564,7 @@ export function DocumentViewer({ document, documents, isOpen, onClose, onNavigat
                             {fileExtension} • {formatFileSize(document.fileSizeBytes)}
                           </p>
                           <p className="text-xs text-muted-foreground px-4">
-                            {isPdf 
-                              ? "Mobile browsers don't support inline PDF previews. Please download or share the file to view it." 
-                              : "Preview not available for this file type."}
+                            Preview not available for this file type.
                           </p>
                         </div>
                         <Button onClick={handleDownload} className="gap-2">

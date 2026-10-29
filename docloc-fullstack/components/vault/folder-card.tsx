@@ -35,6 +35,7 @@ interface FolderCardProps {
     documentCount?: number;
     childFolderCount?: number;
   };
+  viewMode?: 'grid' | 'list';
   onNavigate: (folderId: string) => void;
   onDrop?: (folderId: string, documentId: string) => void;
   onDropFolder?: (targetFolderId: string, draggedFolderId: string) => void;
@@ -50,7 +51,13 @@ const COLOR_MAP: Record<string, string> = {
   default: 'text-primary bg-primary/5 border-primary/10'
 };
 
-export function FolderCard({ folder, onNavigate, onDrop, onDropFolder }: FolderCardProps) {
+export function FolderCard({
+  folder,
+  viewMode = 'grid',
+  onNavigate,
+  onDrop,
+  onDropFolder,
+}: FolderCardProps) {
   const [isHovered, setIsHovered] = useState(false);
   const [isDragOver, setIsDragOver] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
@@ -61,6 +68,7 @@ export function FolderCard({ folder, onNavigate, onDrop, onDropFolder }: FolderC
   const deleteFolder = useDeleteFolder();
 
   const colorClass = folder.color && COLOR_MAP[folder.color] ? COLOR_MAP[folder.color] : COLOR_MAP.default;
+  const isList = viewMode === 'list';
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
@@ -130,16 +138,49 @@ export function FolderCard({ folder, onNavigate, onDrop, onDropFolder }: FolderC
     }
   };
 
+  const folderMenu = (
+    <div onClick={(e) => e.stopPropagation()}>
+      <DropdownMenu>
+        <DropdownMenuTrigger
+          render={
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 focus:opacity-100 data-[state=open]:opacity-100 transition-opacity"
+            >
+              <RiMoreLine className="w-4 h-4" />
+            </Button>
+          }
+        />
+        <DropdownMenuContent align="end">
+          <DropdownMenuItem onClick={() => setIsEditing(true)}>
+            <RiEditLine className="w-4 h-4 mr-2" />
+            Rename
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => setShowMoveDialog(true)}>
+            <RiFolderTransferLine className="w-4 h-4 mr-2" />
+            Move Folder
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={handleDelete}>
+            <RiDeleteBinLine className="w-4 h-4 mr-2" />
+            Delete
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </div>
+  );
+
   return (
     <>
       <motion.div
         layout
-        whileHover={{ y: -2 }}
+        whileHover={isList ? undefined : { y: -2 }}
         transition={{ duration: 0.2 }}
-        className="h-full"
+        className={isList ? undefined : 'h-full'}
       >
         <div
-          className="h-full"
+          className={isList ? undefined : 'h-full'}
           draggable
           onDragStart={(e: React.DragEvent) => {
             e.dataTransfer.setData('application/x-docloc-folder', folder.id);
@@ -148,9 +189,13 @@ export function FolderCard({ folder, onNavigate, onDrop, onDropFolder }: FolderC
             e.dataTransfer.effectAllowed = 'move';
           }}
         >
-          <Card 
-            className={`group h-full flex flex-col border-border/60 hover:border-primary/40 transition-colors cursor-pointer overflow-hidden ${
-              isDragOver ? 'ring-2 ring-primary/50 scale-[1.02]' : ''
+          <Card
+            className={`group border-border/60 hover:border-primary/40 transition-colors cursor-pointer overflow-hidden ${
+              isDragOver ? 'ring-2 ring-primary/50 scale-[1.01]' : ''
+            } ${
+              isList
+                ? 'px-3 py-2.5 flex items-center gap-3'
+                : 'h-full flex flex-col'
             }`}
             onMouseEnter={() => setIsHovered(true)}
             onMouseLeave={() => setIsHovered(false)}
@@ -159,62 +204,87 @@ export function FolderCard({ folder, onNavigate, onDrop, onDropFolder }: FolderC
             onDrop={handleDrop}
             onClick={() => !isEditing && onNavigate(folder.id)}
           >
-            <div className={`h-36 flex items-center justify-center border-b ${colorClass} transition-colors relative`}>
-              {isHovered ? (
-                <RiFolderOpenLine className="w-16 h-16 opacity-80" />
-              ) : (
-                <RiFolderLine className="w-16 h-16 opacity-80" />
-              )}
-              
-              <div className="absolute top-2 right-2" onClick={(e) => e.stopPropagation()}>
-                <DropdownMenu>
-                  <DropdownMenuTrigger render={<Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100 focus:opacity-100 data-[state=open]:opacity-100 transition-opacity"><RiMoreLine className="w-4 h-4" /></Button>} />
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={() => setIsEditing(true)}>
-                      <RiEditLine className="w-4 h-4 mr-2" />
-                      Rename
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => setShowMoveDialog(true)}>
-                      <RiFolderTransferLine className="w-4 h-4 mr-2" />
-                      Move Folder
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={handleDelete}>
-                      <RiDeleteBinLine className="w-4 h-4 mr-2" />
-                      Delete
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
-            </div>
-            
-            <div className="p-4 flex flex-col gap-1 flex-1">
-              {isEditing ? (
-                <Input
-                  value={editName}
-                  onChange={(e) => setEditName(e.target.value)}
-                  onBlur={handleRename}
-                  onKeyDown={handleKeyDown}
-                  className="h-7 px-2 text-sm"
-                  autoFocus
-                  onClick={(e) => e.stopPropagation()}
-                />
-              ) : (
-                <h3 className="font-semibold text-sm truncate" title={folder.name}>
-                  {folder.name}
-                </h3>
-              )}
-              
-              <div className="flex items-center gap-2 text-xs text-muted-foreground mt-auto pt-2">
-                <span>{folder.documentCount || 0} docs</span>
-                {folder.childFolderCount !== undefined && (
-                  <>
-                    <span>•</span>
-                    <span>{folder.childFolderCount} folders</span>
-                  </>
-                )}
-              </div>
-            </div>
+            {isList ? (
+              <>
+                <div
+                  className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 border ${colorClass}`}
+                >
+                  {isHovered ? (
+                    <RiFolderOpenLine className="w-5 h-5 opacity-90" />
+                  ) : (
+                    <RiFolderLine className="w-5 h-5 opacity-90" />
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  {isEditing ? (
+                    <Input
+                      value={editName}
+                      onChange={(e) => setEditName(e.target.value)}
+                      onBlur={handleRename}
+                      onKeyDown={handleKeyDown}
+                      className="h-7 px-2 text-sm"
+                      autoFocus
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                  ) : (
+                    <h3 className="font-semibold text-sm truncate" title={folder.name}>
+                      {folder.name}
+                    </h3>
+                  )}
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
+                    <span>{folder.documentCount || 0} docs</span>
+                    {folder.childFolderCount !== undefined && (
+                      <>
+                        <span>•</span>
+                        <span>{folder.childFolderCount} folders</span>
+                      </>
+                    )}
+                  </div>
+                </div>
+                {folderMenu}
+              </>
+            ) : (
+              <>
+                <div
+                  className={`h-36 flex items-center justify-center border-b ${colorClass} transition-colors relative`}
+                >
+                  {isHovered ? (
+                    <RiFolderOpenLine className="w-16 h-16 opacity-80" />
+                  ) : (
+                    <RiFolderLine className="w-16 h-16 opacity-80" />
+                  )}
+                  <div className="absolute top-2 right-2">{folderMenu}</div>
+                </div>
+
+                <div className="p-4 flex flex-col gap-1 flex-1">
+                  {isEditing ? (
+                    <Input
+                      value={editName}
+                      onChange={(e) => setEditName(e.target.value)}
+                      onBlur={handleRename}
+                      onKeyDown={handleKeyDown}
+                      className="h-7 px-2 text-sm"
+                      autoFocus
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                  ) : (
+                    <h3 className="font-semibold text-sm truncate" title={folder.name}>
+                      {folder.name}
+                    </h3>
+                  )}
+
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground mt-auto pt-2">
+                    <span>{folder.documentCount || 0} docs</span>
+                    {folder.childFolderCount !== undefined && (
+                      <>
+                        <span>•</span>
+                        <span>{folder.childFolderCount} folders</span>
+                      </>
+                    )}
+                  </div>
+                </div>
+              </>
+            )}
           </Card>
         </div>
       </motion.div>

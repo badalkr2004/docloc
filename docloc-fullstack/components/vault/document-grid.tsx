@@ -48,6 +48,15 @@ export function DocumentGrid({
         icon={RiFileList3Line}
         title="No documents found"
         description="Try adjusting your filters or upload some new documents to your vault."
+        action={
+          <button
+            type="button"
+            className="inline-flex items-center justify-center rounded-md text-sm font-medium h-9 px-4 bg-primary text-primary-foreground hover:bg-primary/90"
+            onClick={() => document.dispatchEvent(new CustomEvent('open-upload-dialog'))}
+          >
+            Upload documents
+          </button>
+        }
       />
     );
   }
@@ -66,6 +75,7 @@ export function DocumentGrid({
           <FolderCard
             key={`folder-${folder.id}`}
             folder={folder}
+            viewMode={viewMode}
             onNavigate={onFolderNavigate || (() => {})}
             onDrop={onDropDocToFolder}
             onDropFolder={onDropFolderToFolder}

@@ -8,7 +8,7 @@ export default async function BucketDetailPage({
   const { id } = await params;
   
   return (
-    <div className="container py-8 max-w-[1600px] mx-auto h-[calc(100vh-4rem)]">
+    <div className="w-full max-w-[1600px] mx-auto h-full min-h-0">
       <BucketBuilder id={id} />
     </div>
   );

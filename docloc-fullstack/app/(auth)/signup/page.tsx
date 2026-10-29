@@ -117,7 +117,7 @@ export default function SignupPage() {
             <div className="bg-primary/90 p-2 xl:p-2.5 rounded-xl shadow-lg shadow-primary/20 backdrop-blur-md">
                <RiShieldKeyholeLine className="w-6 h-6 xl:w-8 xl:h-8 text-primary-foreground" />
             </div>
-            <span className="text-2xl xl:text-3xl font-heading font-bold tracking-tight">DocLocker</span>
+            <span className="text-2xl xl:text-3xl font-heading font-bold tracking-tight">Docloc</span>
           </div>
           <h1 className="text-3xl lg:text-4xl xl:text-5xl font-bold leading-[1.15] tracking-tight mb-4 xl:mb-6">
             Join the new standard in document security.
@@ -153,7 +153,7 @@ export default function SignupPage() {
             <div className="bg-primary/90 p-2 rounded-xl shadow-lg shadow-primary/20">
                <RiShieldKeyholeLine className="w-7 h-7 text-primary-foreground" />
             </div>
-            <span className="text-2xl font-heading font-bold tracking-tight">DocLocker</span>
+            <span className="text-2xl font-heading font-bold tracking-tight">Docloc</span>
           </div>
 
           <AnimatePresence mode="wait">

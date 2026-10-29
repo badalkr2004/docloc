@@ -1,13 +1,20 @@
-"use client";
+'use client';
 
-import { SidebarTrigger } from "@/components/ui/sidebar";
-import { useCryptoStore } from "@/stores/crypto-store";
-import { useSession } from "@/lib/api/hooks/use-auth";
-import { RiLockLine, RiLockUnlockLine, RiUserLine } from "@remixicon/react";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { SidebarTrigger } from '@/components/ui/sidebar';
+import { useCryptoStore } from '@/stores/crypto-store';
+import { useSession } from '@/lib/api/hooks/use-auth';
+import { RiLockLine, RiLockUnlockLine, RiUserLine } from '@remixicon/react';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
+import { toast } from 'sonner';
 
 export function AppHeader() {
   const isUnlocked = useCryptoStore((s) => s.isUnlocked);
+  const lock = useCryptoStore((s) => s.lock);
   const { data: session } = useSession();
 
   return (
@@ -19,26 +26,33 @@ export function AppHeader() {
       <div className="flex items-center gap-3">
         <TooltipProvider>
           <Tooltip>
-            <TooltipTrigger render={
-              <button
-                type="button"
-                onClick={() => {
-                  if (!isUnlocked) {
-                    document.dispatchEvent(new CustomEvent('open-passphrase-modal'));
-                  }
-                }}
-                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border transition-colors ${
-                  isUnlocked
-                    ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20'
-                    : 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20 cursor-pointer hover:bg-amber-500/20'
-                }`}
-              >
-                {isUnlocked ? <RiLockUnlockLine size={14} /> : <RiLockLine size={14} />}
-                <span>{isUnlocked ? 'Vault Unlocked' : 'Click to Unlock'}</span>
-              </button>
-            } />
+            <TooltipTrigger
+              render={
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (isUnlocked) {
+                      lock();
+                      toast.message('Vault locked');
+                    } else {
+                      document.dispatchEvent(new CustomEvent('open-passphrase-modal'));
+                    }
+                  }}
+                  className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border transition-colors cursor-pointer ${
+                    isUnlocked
+                      ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20 hover:bg-emerald-500/20'
+                      : 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20 hover:bg-amber-500/20'
+                  }`}
+                >
+                  {isUnlocked ? <RiLockUnlockLine size={14} /> : <RiLockLine size={14} />}
+                  <span>{isUnlocked ? 'Vault Unlocked' : 'Click to Unlock'}</span>
+                </button>
+              }
+            />
             <TooltipContent>
-              {isUnlocked ? 'End-to-end encryption keys loaded in memory' : 'Passphrase required to decrypt documents'}
+              {isUnlocked
+                ? 'Click to lock and clear keys from memory'
+                : 'Passphrase required to decrypt documents'}
             </TooltipContent>
           </Tooltip>
         </TooltipProvider>
@@ -46,7 +60,9 @@ export function AppHeader() {
         {session?.user && (
           <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground bg-muted/40 px-2.5 py-1 rounded-full border border-border/40">
             <RiUserLine size={14} />
-            <span className="truncate max-w-[120px]">{session.user.name || session.user.email}</span>
+            <span className="truncate max-w-[120px]">
+              {session.user.name || session.user.email}
+            </span>
           </div>
         )}
       </div>

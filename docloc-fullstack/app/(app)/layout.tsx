@@ -1,21 +1,27 @@
-"use client";
+'use client';
 
-import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
-import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
-import { AppSidebar } from "@/components/layout/app-sidebar";
-import { PassphraseModal } from "@/components/auth/passphrase-modal";
-import { useSession, useKeys } from "@/lib/api/hooks/use-auth";
-import { useCryptoStore } from "@/stores/crypto-store";
-import { MobileNav } from "@/components/layout/mobile-nav";
-
-import { AppHeader } from "@/components/layout/app-header";
+import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
+import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
+import { AppSidebar } from '@/components/layout/app-sidebar';
+import { PassphraseModal } from '@/components/auth/passphrase-modal';
+import { useSession, useKeys } from '@/lib/api/hooks/use-auth';
+import { useCryptoStore } from '@/stores/crypto-store';
+import { MobileNav } from '@/components/layout/mobile-nav';
+import { AppHeader } from '@/components/layout/app-header';
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
+  const { data: session, isLoading: sessionLoading } = useSession();
   const { data: keys, isLoading: keysLoading } = useKeys();
   const isUnlocked = useCryptoStore((s) => s.isUnlocked);
   const [showPassphrase, setShowPassphrase] = useState(false);
+
+  useEffect(() => {
+    if (!sessionLoading && session === null) {
+      router.replace('/login');
+    }
+  }, [session, sessionLoading, router]);
 
   useEffect(() => {
     if (
@@ -35,7 +41,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     return () => document.removeEventListener('open-passphrase-modal', handleOpenPassphrase);
   }, []);
 
-  if (keysLoading) {
+  if (sessionLoading || keysLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="flex flex-col items-center gap-3">
@@ -46,12 +52,18 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     );
   }
 
+  if (!session) {
+    return null;
+  }
+
   return (
     <SidebarProvider>
       <AppSidebar />
       <SidebarInset>
         <AppHeader />
-        <main className="flex-1 p-4 md:p-6 pb-[calc(4.5rem+env(safe-area-inset-bottom))] md:pb-6">{children}</main>
+        <main className="flex-1 p-4 md:p-6 pb-[calc(4.5rem+env(safe-area-inset-bottom))] md:pb-6">
+          {children}
+        </main>
         <MobileNav />
       </SidebarInset>
 

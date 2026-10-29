@@ -18,6 +18,7 @@ import {
   RiCloseLine,
   RiDownloadLine,
   RiErrorWarningLine,
+  RiEyeLine,
   RiInformationLine,
   RiLockLine,
   RiShieldCheckLine,
@@ -393,11 +394,29 @@ export function SharedDocumentViewer({
                       draggable={false}
                     />
                   ) : isPdf ? (
-                    <iframe
-                      src={`${blobUrl}#toolbar=1&navpanes=0`}
-                      className="w-full h-full border-0"
-                      title={document.title}
-                    />
+                    <div className="relative w-full h-full flex flex-col">
+                      <iframe
+                        src={`${blobUrl}#toolbar=1&navpanes=0&view=FitH`}
+                        className="w-full flex-1 border-0 bg-background"
+                        title={document.title}
+                      />
+                      <div className="sm:hidden shrink-0 flex gap-2 p-3 border-t bg-background/95">
+                        <Button
+                          variant="outline"
+                          className="flex-1 gap-2"
+                          onClick={() => window.open(blobUrl, '_blank', 'noopener,noreferrer')}
+                        >
+                          <RiEyeLine className="w-4 h-4" />
+                          Open PDF
+                        </Button>
+                        {accessType === 'download' && (
+                          <Button className="flex-1 gap-2" onClick={handleDownload}>
+                            <RiDownloadLine className="w-4 h-4" />
+                            Download
+                          </Button>
+                        )}
+                      </div>
+                    </div>
                   ) : (
                     <div className="flex flex-col items-center gap-6 p-12 bg-card rounded-2xl border shadow-lg max-w-sm text-center">
                       <div className="h-20 w-20 rounded-2xl bg-muted/50 flex items-center justify-center">
