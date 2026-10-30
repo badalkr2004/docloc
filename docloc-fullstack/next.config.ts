@@ -24,8 +24,8 @@ const nextConfig: NextConfig = {
               "img-src 'self' blob: data:",
               // Fonts: self
               "font-src 'self'",
-              // Connections: self + Cloudflare R2 (presigned uploads/downloads)
-              "connect-src 'self' https://*.r2.cloudflarestorage.com https://*.r2.dev",
+              // Connections: self + R2 + Google Drive API (client-side backup/restore uploads)
+              "connect-src 'self' https://*.r2.cloudflarestorage.com https://*.r2.dev https://www.googleapis.com https://oauth2.googleapis.com https://accounts.google.com",
               // Workers: blob (used by Web Crypto / future Web Workers)
               "worker-src 'self' blob:",
               // Frames: self only (PDF viewer uses blob iframe)

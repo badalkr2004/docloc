@@ -37,6 +37,32 @@ export async function deleteObject(key: string) {
   return r2Client.send(command);
 }
 
+export async function putObject(
+  key: string,
+  body: Uint8Array | Buffer,
+  contentType = 'application/octet-stream'
+) {
+  const command = new PutObjectCommand({
+    Bucket: env.R2_BUCKET_NAME,
+    Key: key,
+    Body: body,
+    ContentType: contentType,
+  });
+  return r2Client.send(command);
+}
+
+export async function getObjectBytes(key: string): Promise<Uint8Array> {
+  const command = new GetObjectCommand({
+    Bucket: env.R2_BUCKET_NAME,
+    Key: key,
+  });
+  const res = await r2Client.send(command);
+  const stream = res.Body;
+  if (!stream) throw new Error('Empty R2 object');
+  const bytes = await stream.transformToByteArray();
+  return bytes;
+}
+
 export function generateStorageKey(userId: string, documentId: string, filename: string) {
   return `${userId}/${documentId}/${filename}`;
 }

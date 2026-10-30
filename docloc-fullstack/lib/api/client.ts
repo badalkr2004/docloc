@@ -6,6 +6,19 @@ const apiClient = axios.create({
   headers: { 'Content-Type': 'application/json' },
 });
 
+apiClient.interceptors.request.use((config) => {
+  // FormData must set its own multipart boundary — drop default JSON content-type
+  if (typeof FormData !== 'undefined' && config.data instanceof FormData && config.headers) {
+    const h = config.headers as any;
+    if (typeof h.set === 'function') {
+      h.set('Content-Type', false);
+    } else {
+      delete h['Content-Type'];
+    }
+  }
+  return config;
+});
+
 apiClient.interceptors.response.use(
   (response) => response,
   (error) => {

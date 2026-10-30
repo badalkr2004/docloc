@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { Suspense, useState } from 'react';
 import { useSession, useSignOut, useKeys, useStoreKeys } from '@/lib/api/hooks/use-auth';
 import { useTheme } from '@/components/providers/theme-provider';
 import { Button } from '@/components/ui/button';
@@ -21,6 +21,7 @@ import {
   encryptPrivateKeyWithPassphrase,
 } from '@/lib/crypto';
 import { useCryptoStore } from '@/stores/crypto-store';
+import { BackupPanel } from '@/components/settings/backup-panel';
 
 export default function SettingsPage() {
   const { data: session } = useSession();
@@ -187,6 +188,10 @@ export default function SettingsPage() {
             </form>
           </CardContent>
         </Card>
+
+        <Suspense fallback={null}>
+          <BackupPanel />
+        </Suspense>
 
         <Card className="border-dashed opacity-75">
           <CardHeader>

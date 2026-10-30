@@ -12,4 +12,12 @@ export const env = {
   get EMAIL_FROM() { return process.env.EMAIL_FROM || 'noreply@docloc.app'; },
   get UPSTASH_REDIS_REST_URL() { return process.env.UPSTASH_REDIS_REST_URL || ''; },
   get UPSTASH_REDIS_REST_TOKEN() { return process.env.UPSTASH_REDIS_REST_TOKEN || ''; },
+  get GOOGLE_CLIENT_ID() { return process.env.GOOGLE_CLIENT_ID || ''; },
+  get GOOGLE_CLIENT_SECRET() { return process.env.GOOGLE_CLIENT_SECRET || ''; },
+  get GOOGLE_DRIVE_REDIRECT_URI() {
+    return (
+      process.env.GOOGLE_DRIVE_REDIRECT_URI ||
+      `${process.env.NEXT_PUBLIC_APP_URL || process.env.BETTER_AUTH_URL || 'http://localhost:3000'}/api/backup/drive/callback`
+    );
+  },
 };

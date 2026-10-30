@@ -134,6 +134,38 @@ export const auditLogs = pgTable('audit_logs', {
   index('audit_logs_actor_idx').on(t.actorUserId),
 ]);
 
+/** Linked Google Drive account for encrypted vault backups (not used for login). */
+export const googleDriveConnections = pgTable('google_drive_connections', {
+  userId: text('user_id').primaryKey().references(() => auth.user.id, { onDelete: 'cascade' }),
+  googleEmail: text('google_email'),
+  refreshTokenEnc: text('refresh_token_enc').notNull(),
+  accessTokenEnc: text('access_token_enc'),
+  accessTokenExpiresAt: timestamp('access_token_expires_at', { mode: 'date', withTimezone: true }),
+  connectedAt: timestamp('connected_at', { mode: 'date', withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { mode: 'date', withTimezone: true }).notNull().defaultNow(),
+});
+
+export const backupStatusEnum = pgEnum('backup_status', [
+  'pending', 'uploading', 'complete', 'failed',
+]);
+
+export const vaultBackups = pgTable('vault_backups', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: text('user_id').notNull().references(() => auth.user.id, { onDelete: 'cascade' }),
+  provider: varchar('provider', { length: 32 }).notNull().default('google_drive'),
+  label: text('label').notNull(),
+  driveFolderId: text('drive_folder_id'),
+  driveFolderUrl: text('drive_folder_url'),
+  documentCount: integer('document_count').notNull().default(0),
+  totalBytes: integer('total_bytes').notNull().default(0),
+  status: backupStatusEnum('status').notNull().default('pending'),
+  errorMessage: text('error_message'),
+  createdAt: timestamp('created_at', { mode: 'date', withTimezone: true }).notNull().defaultNow(),
+  completedAt: timestamp('completed_at', { mode: 'date', withTimezone: true }),
+}, (t) => [
+  index('vault_backups_user_id_idx').on(t.userId),
+]);
+
 export const usersRelations = relations(auth.user, ({ many }) => ({
   documents: many(documents),
   folders: many(folders),
